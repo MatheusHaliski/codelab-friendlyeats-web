@@ -189,11 +189,13 @@ function resolveFirestoreInstance(possibleDb) {
         const reviewCount = data.review_count ?? data.numRatings ?? 0;
         const averageRating = data.stars ?? data.avgRating ?? 0;
         const price = Number.isFinite(data.price) ? data.price : 0;
+        const city = data.city ?? data.location?.city ?? "";
 
         return {
           id: docSnapshot.id,
           ...data,
           categories,
+          city,
           category: primaryCategory,
           review_count: reviewCount,
           stars: averageRating,

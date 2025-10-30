@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   signInWithGoogle,
@@ -10,7 +10,33 @@ import { addFakeRestaurantsAndReviews } from "@/src/lib/firebase/firestore.js";
 import { setCookie, deleteCookie } from "cookies-next";
 
 function useUserSession(initialUser) {
-  return;
+  const [user, setUser] = useState(initialUser || null);
+
+  useEffect(() => {
+    setUser(initialUser || null);
+  }, [initialUser]);
+
+  useEffect(() => {
+    const unsubscribe = onIdTokenChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        const token = await firebaseUser.getIdToken();
+        setCookie("firebaseAuthToken", token, {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 5,
+        });
+      } else {
+        setUser(null);
+        deleteCookie("firebaseAuthToken", { path: "/" });
+      }
+    });
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, []);
+
+  return user;
 }
 
 export default function Header({ initialUser }) {

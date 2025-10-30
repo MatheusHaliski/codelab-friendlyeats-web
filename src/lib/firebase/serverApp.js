@@ -3,12 +3,24 @@
 import "server-only";
 
 import { cookies } from "next/headers";
-import { initializeServerApp, initializeApp } from "firebase/app";
+import { initializeServerApp } from "firebase/app";
 
 import { getAuth } from "firebase/auth";
 
 // Returns an authenticated client SDK instance for use in Server Side Rendering
 // and Static Site Generation
 export async function getAuthenticatedAppForUser() {
-  throw new Error("not implemented");
+  const authCookie = cookies().get("firebaseAuthToken");
+  const options = authCookie?.value
+    ? { authIdToken: authCookie.value }
+    : undefined;
+
+  const firebaseServerApp = initializeServerApp(undefined, options);
+  const auth = getAuth(firebaseServerApp);
+  await auth.authStateReady();
+
+  return {
+    firebaseServerApp,
+    currentUser: auth.currentUser,
+  };
 }

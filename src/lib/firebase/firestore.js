@@ -1,4 +1,4 @@
-// 🔹 Imports principais do Firebase
+
 import {
   collection,
   doc,
@@ -16,165 +16,206 @@ import {
 
 import { db } from "@/src/lib/firebase/clientApp";
 
-// 🔹 Atualiza imagem de restaurante
-export async function updateRestaurantImageReference(restaurantId, publicImageUrl) {
-  if (!restaurantId || !publicImageUrl) return;
-
-  const restaurantRef = doc(db, "restaurants", restaurantId);
-  await updateDoc(restaurantRef, { photo: publicImageUrl });
+function resolveFirestoreInstance(possibleDb) {
+  return possibleDb ?? db;
 }
+
+
+  export async function updateRestaurantImageReference(
+    restaurantId,
+    publicImageUrl,
+    firestoreInstance
+  ) {
+    if (!restaurantId || !publicImageUrl) return;
+
+    const database = resolveFirestoreInstance(firestoreInstance);
+    const restaurantRef = doc(database, "restaurants", restaurantId);
+    await updateDoc(restaurantRef, { photo: publicImageUrl });
+
+  }
 
 // 🔹 Adiciona avaliação e atualiza médias
-async function updateWithRating(transaction, docRef, newRatingDocument, review) {
-  const restaurantSnapshot = await transaction.get(docRef);
+  async function updateWithRating(transaction, docRef, newRatingDocument, review) {
+    const restaurantSnapshot = await transaction.get(docRef);
 
-  if (!restaurantSnapshot.exists()) {
-    throw new Error("Restaurant not found");
+    if (!restaurantSnapshot.exists()) {
+      throw new Error("Restaurant not found");
+    }
+
+    const data = restaurantSnapshot.data();
+    const currentReviewCount = data.review_count ?? data.numRatings ?? 0;
+    const currentAverageRating = data.stars ?? data.avgRating ?? 0;
+
+    const updatedReviewCount = currentReviewCount + 1;
+    const updatedAverageRating =
+      updatedReviewCount > 0
+        ? (currentAverageRating * currentReviewCount + review.rating) /
+        updatedReviewCount
+        : 0;
+
+    transaction.set(newRatingDocument, review);
+    transaction.update(docRef, {
+      review_count: updatedReviewCount,
+      stars: updatedAverageRating,
+    });
   }
 
-  const data = restaurantSnapshot.data();
-  const currentNumRatings = data.numRatings || 0;
-  const currentSumRating = data.sumRating || 0;
+    export async function addReviewToRestaurant(
+      firestoreOrRestaurantId,
+      maybeRestaurantId,
+      maybeReview
+    ) {
+      const isRestaurantIdFirstArg = typeof firestoreOrRestaurantId === "string";
+      const database = resolveFirestoreInstance(
+        isRestaurantIdFirstArg ? undefined : firestoreOrRestaurantId
+      );
+      const restaurantId = isRestaurantIdFirstArg
+        ? firestoreOrRestaurantId
+        : maybeRestaurantId;
+      const review = isRestaurantIdFirstArg ? maybeRestaurantId : maybeReview;
 
-  const updatedNumRatings = currentNumRatings + 1;
-  const updatedSumRating = currentSumRating + review.rating;
-  const updatedAvgRating =
-    updatedNumRatings > 0 ? updatedSumRating / updatedNumRatings : 0;
+      if (!restaurantId) throw new Error("A restaurantId is required");
+      if (!review || typeof review.rating !== "number")
+        throw new Error("A numeric rating is required");
 
-  transaction.set(newRatingDocument, review);
-  transaction.update(docRef, {
-    numRatings: updatedNumRatings,
-    sumRating: updatedSumRating,
-    avgRating: updatedAvgRating,
-  });
-}
+      const restaurantRef = doc(database, "restaurants", restaurantId);
+      const ratingsCollection = collection(
+        database,
+        "restaurants",
+        restaurantId,
+        "ratings"
+      );
+      const newRatingDocument = doc(ratingsCollection);
 
-// 🔹 Função pública para adicionar review
-export async function addReviewToRestaurant(restaurantId, review) {
-  if (!restaurantId) throw new Error("A restaurantId is required");
-  if (!review || typeof review.rating !== "number")
-    throw new Error("A numeric rating is required");
+      const reviewWithMetadata = {
+        ...review,
+        rating: Number(review.rating),
+        timestamp: Timestamp.now(),
+      };
 
-  const restaurantRef = doc(db, "restaurants", restaurantId);
-  const ratingsCollection = collection(db, "restaurants", restaurantId, "ratings");
-  const newRatingDocument = doc(ratingsCollection);
-
-  const reviewWithMetadata = {
-    ...review,
-    rating: Number(review.rating),
-    timestamp: Timestamp.now(),
-  };
-
-  await runTransaction(db, async (transaction) => {
-    await updateWithRating(transaction, restaurantRef, newRatingDocument, reviewWithMetadata);
-  });
-}
+        await runTransaction(database, async (transaction) => {
+          await updateWithRating(
+            transaction,
+            restaurantRef,
+            newRatingDocument,
+            reviewWithMetadata
+          );
+        });
+      }
 
 // 🔹 Aplica filtros de consulta
-function applyQueryFilters(baseRef, { category, city, price, sort }) {
-  const constraints = [];
+      function applyQueryFilters(baseRef, { category, city, price, sort }) {
+        const constraints = [];
 
-  if (category) constraints.push(where("category", "==", category));
-  if (city) constraints.push(where("city", "==", city));
+        if (category) constraints.push(where("categories", "array-contains", category));
+        if (city) constraints.push(where("city", "==", city));
 
-  if (price) {
-    let priceValue = price;
-    if (typeof price === "string") {
-      priceValue = price.startsWith("$") ? price.length : Number(price);
-    }
-    const numericPrice = Number(priceValue);
-    if (Number.isFinite(numericPrice)) {
-      constraints.push(where("price", "==", numericPrice));
-    } else {
-      console.warn("Ignoring invalid price filter", price);
-    }
-  }
+        if (price) {
+          let priceValue = price;
+          if (typeof price === "string") {
+            priceValue = price.startsWith("$") ? price.length : Number(price);
+          }
+          const numericPrice = Number(priceValue);
+          if (Number.isFinite(numericPrice)) {
+            constraints.push(where("price", "==", numericPrice));
+          } else {
+            console.warn("Ignoring invalid price filter", price);
+          }
+        }
 
-  const sortField = sort === "Review" ? "numRatings" : "avgRating";
-  constraints.push(orderBy(sortField, "desc"));
+        const sortField = sort === "Review" ? "review_count" : "stars";
+        constraints.push(orderBy(sortField, "desc"));
 
-  return query(baseRef, ...constraints);
-}
+        return query(baseRef, ...constraints);
+      }
 
 // 🔹 Retorna lista de restaurantes
-export async function getRestaurants(filters = {}) {
-  const restaurantsRef = collection(db, "restaurants");
-  const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
-  const results = await getDocs(restaurantsQuery);
+      export async function getRestaurants(filters = {}) {
+        const restaurantsRef = collection(db, "restaurants");
+        const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
+        const results = await getDocs(restaurantsQuery);
 
-  return results.docs.map((docSnapshot) => {
-    const data = docSnapshot.data();
-    return {
-      id: docSnapshot.id,
-      ...data,
-      timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : null,
-    };
-  });
-}
+        return results.docs.map(normalizeRestaurantSnapshot);
+      }
 
 // 🔹 Escuta mudanças em tempo real
-export function getRestaurantsSnapshot(cb, filters = {}) {
-  const restaurantsRef = collection(db, "restaurants");
-  const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
+      export function getRestaurantsSnapshot(cb, filters = {}) {
+        const restaurantsRef = collection(db, "restaurants");
+        const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
 
-  return onSnapshot(restaurantsQuery, (querySnapshot) => {
-    const results = querySnapshot.docs.map((docSnapshot) => {
-      const data = docSnapshot.data();
-      return {
-        id: docSnapshot.id,
-        ...data,
-        timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : null,
-      };
-    });
-    cb(results);
-  });
-}
+        return onSnapshot(restaurantsQuery, (querySnapshot) => {
+
+          const results = querySnapshot.docs.map(normalizeRestaurantSnapshot);
+          cb(results);
+        });
+      }
 
 // 🔹 Busca restaurante por ID
-export async function getRestaurantById(restaurantId) {
-  if (!restaurantId) return null;
-  const docRef = doc(db, "restaurants", restaurantId);
-  const docSnap = await getDoc(docRef);
-  if (!docSnap.exists()) return null;
+      export async function getRestaurantById(restaurantId) {
+        if (!restaurantId) return null;
+        const docRef = doc(db, "restaurants", restaurantId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) return null;
 
-  return {
-    id: docSnap.id,
-    ...docSnap.data(),
-    timestamp: docSnap.data().timestamp?.toDate(),
-  };
-}
+        return normalizeRestaurantSnapshot(docSnap);
+      }
 
 // 🔹 Escuta um restaurante específico
-export function getRestaurantSnapshotById(restaurantId, cb) {
-  if (!restaurantId) return;
-  const docRef = doc(db, "restaurants", restaurantId);
+      export function getRestaurantSnapshotById(restaurantId, cb) {
+        if (!restaurantId) return;
+        const docRef = doc(db, "restaurants", restaurantId);
 
-  return onSnapshot(docRef, (docSnapshot) => {
-    const data = docSnapshot.data();
-    if (!data) {
-      cb(undefined);
-      return;
-    }
-    cb({
-      id: docSnapshot.id,
-      ...data,
-      timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : null,
-    });
-  });
-}
+        return onSnapshot(docRef, (docSnapshot) => {
+          const data = docSnapshot.data();
+          if (!data) {
+            cb(undefined);
+            return;
+          }
+          cb(normalizeRestaurantSnapshot(docSnapshot));
+        });
+      }
+
+      function normalizeRestaurantSnapshot(docSnapshot) {
+        const data = docSnapshot.data();
+        const timestamp = data.timestamp?.toDate ? data.timestamp.toDate() : null;
+
+        const categories = Array.isArray(data.categories)
+          ? data.categories
+          : data.category
+            ? [data.category]
+            : [];
+        const primaryCategory = data.category ?? categories[0] ?? "";
+
+        const reviewCount = data.review_count ?? data.numRatings ?? 0;
+        const averageRating = data.stars ?? data.avgRating ?? 0;
+        const price = Number.isFinite(data.price) ? data.price : 0;
+
+        return {
+          id: docSnapshot.id,
+          ...data,
+          categories,
+          category: primaryCategory,
+          review_count: reviewCount,
+          stars: averageRating,
+          numRatings: reviewCount,
+          avgRating: averageRating,
+          price,
+          timestamp,
+        };
+      }
 
 // 🔹 Busca reviews de um restaurante
-export async function getReviewsByRestaurantId(restaurantId) {
-  if (!restaurantId) return [];
-  const q = query(
-    collection(db, "restaurants", restaurantId, "ratings"),
-    orderBy("timestamp", "desc")
-  );
-  const results = await getDocs(q);
+      export async function getReviewsByRestaurantId(restaurantId) {
+        if (!restaurantId) return [];
+        const q = query(
+          collection(db, "restaurants", restaurantId, "ratings"),
+          orderBy("timestamp", "desc")
+        );
+        const results = await getDocs(q);
 
-  return results.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    timestamp: doc.data().timestamp.toDate(),
-  }));
-}
+        return results.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp.toDate(),
+        }));
+      }

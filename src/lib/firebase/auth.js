@@ -1,6 +1,7 @@
 import {
   GoogleAuthProvider,
   signInWithPopup,
+  signOut as firebaseSignOut,
   onAuthStateChanged as _onAuthStateChanged,
   onIdTokenChanged as _onIdTokenChanged,
   signOut as firebaseSignOut,
@@ -9,14 +10,17 @@ import {
 import { auth } from "@/src/lib/firebase/clientApp";
 
 export function onAuthStateChanged(cb) {
+ main
   return _onAuthStateChanged(auth, cb);
 }
 
 export function onIdTokenChanged(cb) {
+ main
   return _onIdTokenChanged(auth, cb);
 }
 
 export async function signInWithGoogle() {
+
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
   await signInWithPopup(auth, provider);
@@ -24,4 +28,12 @@ export async function signInWithGoogle() {
 
 export async function signOut() {
   await firebaseSignOut(auth);
+
+  const provider = new GoogleAuthProvider();
+  return signInWithPopup(auth, provider);
+}
+
+export async function signOut() {
+
+  return firebaseSignOut(auth);
 }

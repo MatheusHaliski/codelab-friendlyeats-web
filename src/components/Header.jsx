@@ -2,18 +2,12 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { setCookie, deleteCookie } from "cookies-next";
-
-// 🔹 Firebase Auth imports
 import {
   signInWithGoogle,
   signOut,
   onIdTokenChanged,
 } from "@/src/lib/firebase/auth";
 
-// 🔹 (Opcional) Importar função de seed
-// import { addFakeRestaurantsAndReviews } from "@/src/lib/firebase/firestore";
-
-// 🔹 Hook para gerenciar sessão do usuário
 function useUserSession(initialUser) {
   const [user, setUser] = useState(initialUser || null);
 
@@ -27,7 +21,7 @@ function useUserSession(initialUser) {
         setUser(firebaseUser);
         const token = await firebaseUser.getIdToken();
 
-        // 🔐 Salva token em cookie (para requests server-side)
+        // 🔐 salva o token em cookie (para autenticação server-side)
         setCookie("firebaseAuthToken", token, {
           path: "/",
           maxAge: 60 * 60 * 24 * 5, // 5 dias
@@ -41,17 +35,19 @@ function useUserSession(initialUser) {
     return () => unsubscribe?.();
   }, []);
 
-  return user;
+  return [user, setUser];
 }
 
-// 🔹 Componente principal Header
 export default function Header({ initialUser }) {
-  const user = useUserSession(initialUser);
+  const [user, setUser] = useUserSession(initialUser);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      // 🔹 Atualiza o estado imediatamente após login
+      setUser(result.user);
+      console.log("Usuário autenticado:", result.user.displayName);
     } catch (err) {
       console.error("Erro ao fazer login com Google:", err);
     }
@@ -62,6 +58,7 @@ export default function Header({ initialUser }) {
     try {
       await signOut();
       deleteCookie("firebaseAuthToken", { path: "/" });
+      setUser(null);
     } catch (err) {
       console.error("Erro ao sair:", err);
     }
@@ -79,11 +76,11 @@ export default function Header({ initialUser }) {
           <div className="profile">
             <img
               src={user.photoURL || "/default-avatar.png"}
-              alt={user.displayName || "User"}
+              alt={user.displayName || "Usuário"}
               className="avatar"
             />
             <span className="username">
-              {user.displayName || "Usuário"}
+              {user.displayName || "Usuário autenticado"}
             </span>
             <button onClick={handleSignOut} className="logout-btn">
               Sign Out
@@ -97,57 +94,57 @@ export default function Header({ initialUser }) {
       </div>
 
       <style jsx>{`
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 2rem;
-          background: #f7f8fa;
-          border-bottom: 1px solid #ddd;
-        }
+          .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 1rem 2rem;
+              background: #2a4d95;
+              border-bottom: 1px solid #ddd;
+          }
 
-        .logo {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          text-decoration: none;
-          color: #333;
-          font-weight: bold;
-        }
+          .logo {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              text-decoration: none;
+              color: #333;
+              font-weight: bold;
+          }
 
-        .auth-controls {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
+          .auth-controls {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+          }
 
-        .profile {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
+          .profile {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+          }
 
-        .avatar {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-        }
+          .avatar {
+              width: 36px;
+              height: 36px;
+              border-radius: 50%;
+          }
 
-        .login-btn,
-        .logout-btn {
-          background-color: #ff6600;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          padding: 0.5rem 1rem;
-          cursor: pointer;
-          font-weight: 500;
-        }
+          .login-btn,
+          .logout-btn {
+              background-color: #ff6600;
+              color: #f5f5f6;
+              border: none;
+              border-radius: 6px;
+              padding: 0.5rem 1rem;
+              cursor: pointer;
+              font-weight: 500;
+          }
 
-        .login-btn:hover,
-        .logout-btn:hover {
-          background-color: #e05500;
-        }
+          .login-btn:hover,
+          .logout-btn:hover {
+              background-color: #e05500;
+          }
       `}</style>
     </header>
   );

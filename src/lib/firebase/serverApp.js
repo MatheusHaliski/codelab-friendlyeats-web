@@ -1,9 +1,6 @@
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getAnalytics } from "firebase/analytics";
-
-
 import { cookies } from "next/headers";
 import { initializeServerApp } from "firebase/app";
 
@@ -14,37 +11,47 @@ const firebaseConfig = {
   storageBucket: "funcionarioslistaapp2025.firebasestorage.app",
   messagingSenderId: "457209482063",
   appId: "1:457209482063:web:a6c1bf1224842970be133a",
-  measurementId: "G-HF0RYXCWZN"
+  measurementId: "G-HF0RYXCWZN",
 };
+let cachedServerApp;
 
+function getOrInitializeDefaultApp() {
+  if (!getApps().length) {
+    return initializeApp(firebaseConfig);
+  }
+  return getApp();
+}
 
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
+function ensureServerApp(options) {
+  if (options) {
+    return initializeServerApp(firebaseConfig, options);
+  }
+  if (!cachedServerApp) {
+    cachedServerApp = getOrInitializeDefaultApp();
+  }
+  return cachedServerApp;
 }
 
 export async function getAuthenticatedAppForUser() {
-
   const authCookie = cookies().get("firebaseAuthToken");
   const options = authCookie?.value
     ? { authIdToken: authCookie.value }
     : undefined;
 
-  const firebaseServerApp = initializeServerApp(undefined, options);
+  const firebaseServerApp = ensureServerApp(options);
   const auth = getAuth(firebaseServerApp);
-  await auth.authStateReady();
+
+  if (typeof auth.authStateReady === "function") {
+    await auth.authStateReady();
+  }
 
   return {
     firebaseServerApp,
-    currentUser: auth.currentUser,
+    currentUser: auth.currentUser ?? null,
   };
-
-  // autenticação básica (pode ajustar conforme necessidade)
-  const auth = getAuth(app);
-  const firestore = getFirestore(app);
-  return { app, auth, firestore };
-
 }
 
+export function getServerFirestore() {
+  const app = ensureServerApp();
+  return getFirestore(app);
+}

@@ -67,7 +67,12 @@ export async function addReviewToRestaurant(db, restaurantId, review) {
   }
 
   const restaurantRef = doc(db, "restaurants", restaurantId);
-  const ratingsCollection = collection(db, "restaurants", restaurantId, "ratings");
+  const ratingsCollection = collection(
+    db,
+    "restaurants",
+    restaurantId,
+    "ratings"
+  );
   const newRatingDocument = doc(ratingsCollection);
 
   const reviewWithMetadata = {

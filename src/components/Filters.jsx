@@ -1,4 +1,5 @@
-// The filters shown on the restaurant listings page
+"use client";
+
 
 import Tag from "@/src/components/Tag.jsx";
 

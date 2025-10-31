@@ -71,23 +71,49 @@ export default function Filters({
             e.target.parentNode.removeAttribute("open");
           }}
         >
-         <FilterSelect
-  label="Food Categories"
-  options={foodOptions}
-  value={filters.category}
-  onChange={(e) => handleSelectionChange(e, "category")}
-  name="foodCategory"
-  icon="/food.svg"
+// Novo filtro de tipo principal
+<FilterSelect
+  label="Type"
+  options={["", "Food", "Lifestyle"]}
+  value={filters.mainType}
+  onChange={(e) => {
+    const selected = e.target.value;
+    setFilters({
+      ...filters,
+      mainType: selected,
+      category: "", // limpa a categoria anterior
+    });
+  }}
+  name="mainType"
+  icon="/type.svg" // ícone genérico (veja abaixo)
+  key="type-filter"
 />
 
-<FilterSelect
-  label="Other Categories"
-  options={otherOptions}
-  value={filters.category}
-  onChange={(e) => handleSelectionChange(e, "category")}
-  name="otherCategory"
-  icon="/other.svg"
-/>
+// Subfiltro dinâmico (aparece conforme a escolha do tipo)
+{filters.mainType === "Food" && (
+  <FilterSelect
+    label="Food Category"
+    options={foodOptions}
+    value={filters.category}
+    onChange={(e) => handleSelectionChange(e, "category")}
+    name="category"
+    icon="/food.svg"
+    key="food-filter"
+  />
+)}
+
+{filters.mainType === "Lifestyle" && (
+  <FilterSelect
+    label="Lifestyle Category"
+    options={otherOptions}
+    value={filters.category}
+    onChange={(e) => handleSelectionChange(e, "category")}
+    name="category"
+    icon="/lifestyle.svg"
+    key="lifestyle-filter"
+  />
+)}
+
 
 
           <FilterSelect

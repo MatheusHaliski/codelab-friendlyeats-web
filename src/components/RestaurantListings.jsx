@@ -92,12 +92,14 @@ const otherCategories = allCategories.filter(cat =>
 export default function RestaurantListings({ initialRestaurants, searchParams }) {
   const router = useRouter();
 
-  const initialFilters = {
-    category: searchParams.category || "",
-    city: searchParams.city || "",
-    country: searchParams.country || "",
-    sort: searchParams.sort || "rating",
-  };
+const initialFilters = {
+  mainType: searchParams.mainType || "",
+  category: searchParams.category || "",
+  country: searchParams.country || "",
+  city: searchParams.city || "",
+  sort: searchParams.sort || "rating",
+};
+
 
   const [restaurants, setRestaurants] = useState(initialRestaurants);
   const [filters, setFilters] = useState(initialFilters);

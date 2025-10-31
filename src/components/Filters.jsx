@@ -55,7 +55,7 @@ export default function Filters({
         <summary>
           <img src="/filter.svg" alt="filter" />
           <div>
-            <p>Restaurants</p>
+            <p>Search Restaurants & Lifestyle basics</p>
             <p>
               Sorted by{" "}
               {filters.sort === "review"

@@ -1,6 +1,5 @@
 "use client";
 
-
 import Tag from "@/src/components/Tag.jsx";
 
 function FilterSelect({ label, options, value, onChange, name, icon }) {
@@ -11,14 +10,10 @@ function FilterSelect({ label, options, value, onChange, name, icon }) {
         {label}
         <select value={value} onChange={onChange} name={name}>
           {options.map((option, index) => {
-            const optionValue =
-              typeof option === "string" ? option : option.value ?? "";
-            const optionLabel =
-              typeof option === "string" ? option : option.label ?? option.value;
-            const key = optionValue === "" ? `all-${index}` : optionValue;
+            const opt = typeof option === "string" ? option : option.value;
             return (
-              <option value={optionValue} key={key}>
-                {optionValue === "" ? "All" : optionLabel}
+              <option key={index} value={opt}>
+                {opt === "" ? "All" : opt}
               </option>
             );
           })}
@@ -32,32 +27,19 @@ export default function Filters({
   filters,
   setFilters,
   categoryOptions = [""],
+  countryOptions = [""],
   cityOptions = [""],
-  priceOptions = ["", "$", "$$", "$$$", "$$$$"],
   sortOptions = [
     { value: "rating", label: "Rating" },
-    { value: "review", label: "Review" },
+    { value: "review", label: "Reviews" },
   ],
 }) {
-  const ensureAllOption = (options) => {
-    if (!Array.isArray(options) || options.length === 0) {
-      return [""];
-    }
-    const normalized = options.filter(
-      (option) => option !== undefined && option !== null
-    );
-    if (normalized.length === 0) return [""];
-    return normalized[0] === "" ? normalized : ["", ...normalized];
-  };
-
-  const categories = ensureAllOption(categoryOptions);
-  const cities = ensureAllOption(cityOptions);
-  const prices = ensureAllOption(priceOptions);
-
   const handleSelectionChange = (event, name) => {
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      [name]: event.target.value,
+    const value = event.target.value;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === "country" ? { city: "" } : {}), // reseta cidade ao mudar país
     }));
   };
 
@@ -82,45 +64,43 @@ export default function Filters({
         </summary>
 
         <form
-          method="GET"
-          onSubmit={(event) => {
-            event.preventDefault();
-            event.target.parentNode.removeAttribute("open");
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.target.parentNode.removeAttribute("open");
           }}
         >
           <FilterSelect
             label="Category"
-            options={categories}
+            options={categoryOptions}
             value={filters.category}
-            onChange={(event) => handleSelectionChange(event, "category")}
+            onChange={(e) => handleSelectionChange(e, "category")}
             name="category"
             icon="/food.svg"
           />
 
           <FilterSelect
+            label="Country"
+            options={countryOptions}
+            value={filters.country}
+            onChange={(e) => handleSelectionChange(e, "country")}
+            name="country"
+            icon="/flag.svg"
+          />
+
+          <FilterSelect
             label="City"
-            options={cities}
+            options={cityOptions}
             value={filters.city}
-            onChange={(event) => handleSelectionChange(event, "city")}
+            onChange={(e) => handleSelectionChange(e, "city")}
             name="city"
             icon="/location.svg"
           />
-
-       <FilterSelect
-  label="Price"
-  options={["", "$", "$$", "$$$", "$$$$"]}
-  value={filters.price || ""}
-  onChange={(event) => handleSelectionChange(event, "price")}
-  name="price"
-  icon="/price.svg"
-/>
-
 
           <FilterSelect
             label="Sort"
             options={sortOptions}
             value={filters.sort}
-            onChange={(event) => handleSelectionChange(event, "sort")}
+            onChange={(e) => handleSelectionChange(e, "sort")}
             name="sort"
             icon="/sortBy.svg"
           />
@@ -130,14 +110,14 @@ export default function Filters({
               <button
                 className="button--cancel"
                 type="reset"
-                onClick={() => {
+                onClick={() =>
                   setFilters({
-                    city: "",
                     category: "",
-                    price: "",
+                    country: "",
+                    city: "",
                     sort: "rating",
-                  });
-                }}
+                  })
+                }
               >
                 Reset
               </button>

@@ -10,7 +10,7 @@ import Filters from "@/src/components/Filters.jsx";
 const RestaurantItem = ({ restaurant }) => (
   <li key={restaurant.id}>
     <Link href={`/restaurant/${restaurant.id}`}>
-      <div className="restaurant-card">
+      <div>
         <div className="image-cover">
           <img src={restaurant.photo} alt={restaurant.name} />
         </div>
@@ -20,12 +20,9 @@ const RestaurantItem = ({ restaurant }) => (
             <ul>{renderStars(restaurant.avgRating)}</ul>
             <span>({restaurant.numRatings})</span>
           </div>
-          <div className="restaurant__meta">
-            <p>
-              {restaurant.category} | {restaurant.city}
-            </p>
-            <p>{"$".repeat(restaurant.price)}</p>
-          </div>
+          <p>
+            {restaurant.category} | {restaurant.city}, {restaurant.country}
+          </p>
         </div>
       </div>
     </Link>
@@ -33,59 +30,50 @@ const RestaurantItem = ({ restaurant }) => (
 );
 
 // -------------------------------
-// Funções auxiliares
+// Geração dinâmica de filtros
 // -------------------------------
 function deriveAvailableFilters(restaurants = []) {
   const categories = new Set();
-  const cities = new Set();
-  const prices = new Set();
+  const citiesByCountry = {};
+  const countries = new Set();
 
   restaurants.forEach((restaurant) => {
     if (Array.isArray(restaurant.categories)) {
-      restaurant.categories.forEach((category) => {
-        if (category) categories.add(category);
-      });
+      restaurant.categories.forEach((c) => categories.add(c));
     } else if (restaurant.category) {
       categories.add(restaurant.category);
     }
 
-    if (restaurant.city) cities.add(restaurant.city);
-    if (restaurant.price) prices.add(restaurant.price);
+    if (restaurant.country) {
+      countries.add(restaurant.country);
+
+      if (!citiesByCountry[restaurant.country]) {
+        citiesByCountry[restaurant.country] = new Set();
+      }
+
+      if (restaurant.city) {
+        citiesByCountry[restaurant.country].add(restaurant.city);
+      }
+    }
   });
 
   return {
-    categories: Array.from(categories).sort((a, b) => a.localeCompare(b)),
-    cities: Array.from(cities).sort((a, b) => a.localeCompare(b)),
-    prices: Array.from(prices).sort((a, b) => a - b),
+    categories: Array.from(categories).sort(),
+    countries: Array.from(countries).sort(),
+    citiesByCountry: Object.fromEntries(
+      Object.entries(citiesByCountry).map(([k, v]) => [k, Array.from(v).sort()])
+    ),
   };
 }
 
-function mergeAvailableFilters(previous, next) {
-  const unique = (values) => Array.from(new Set(values));
-
-  return {
-    categories: unique([...previous.categories, ...next.categories]).sort((a, b) =>
-      a.localeCompare(b)
-    ),
-    cities: unique([...previous.cities, ...next.cities]).sort((a, b) =>
-      a.localeCompare(b)
-    ),
-    prices: unique([...previous.prices, ...next.prices]).sort((a, b) => a - b),
-  };
-}
-
-// -------------------------------
-// Componente principal
-// -------------------------------
-export default function RestaurantListings({ initialRestaurants = [], searchParams = {} }) {
+export default function RestaurantListings({ initialRestaurants, searchParams }) {
   const router = useRouter();
 
-  // 🔹 Filtros iniciais vindos da URL
   const initialFilters = {
-    city: searchParams.city || "",
     category: searchParams.category || "",
-    price: searchParams.price || "",
-    sort: searchParams.sort || "rating", // padrão
+    city: searchParams.city || "",
+    country: searchParams.country || "",
+    sort: searchParams.sort || "rating",
   };
 
   const [restaurants, setRestaurants] = useState(initialRestaurants);
@@ -94,79 +82,59 @@ export default function RestaurantListings({ initialRestaurants = [], searchPara
     deriveAvailableFilters(initialRestaurants)
   );
 
-  // 🔹 Atualiza URL ao mudar filtros
+  // Atualiza URL ao alterar filtros
   useEffect(() => {
-    const queryParams = new URLSearchParams();
+    const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
-      if (value) queryParams.append(key, value);
+      if (value) params.append(key, value);
     }
-    router.push(`?${queryParams.toString()}`);
-  }, [filters, router]);
-
-  // 🔹 Atualiza dados Firestore em tempo real
-  useEffect(() => {
-    const unsubscribe = getRestaurantsSnapshot((data) => {
-      setRestaurants(data);
-    }, filters);
-
-    return () => unsubscribe && unsubscribe();
+    router.push(`?${params.toString()}`);
   }, [filters]);
 
-  // 🔹 Atualiza filtros disponíveis quando lista muda
+  // Atualiza lista de restaurantes em tempo real
   useEffect(() => {
-    const derived = deriveAvailableFilters(restaurants);
-    setAvailableFilters((previous) => mergeAvailableFilters(previous, derived));
+    return getRestaurantsSnapshot((data) => setRestaurants(data), filters);
+  }, [filters]);
+
+  // Atualiza lista de filtros disponíveis conforme dados
+  useEffect(() => {
+    setAvailableFilters(deriveAvailableFilters(restaurants));
   }, [restaurants]);
 
-  // 🔹 Opções para selects
-  const categoryOptions = useMemo(
-    () => ["", ...availableFilters.categories],
-    [availableFilters.categories]
-  );
-  const cityOptions = useMemo(
-    () => ["", ...availableFilters.cities],
-    [availableFilters.cities]
-  );
-  const priceOptions = useMemo(
-    () => ["", ...availableFilters.prices],
-    [availableFilters.prices]
-  );
+  const categoryOptions = ["", ...availableFilters.categories];
+  const countryOptions = ["", ...availableFilters.countries];
+  const cityOptions =
+    filters.country && availableFilters.citiesByCountry[filters.country]
+      ? ["", ...availableFilters.citiesByCountry[filters.country]]
+      : [""];
 
-  // 🔹 Renderização final
   return (
     <article>
       <Filters
         filters={filters}
         setFilters={setFilters}
         categoryOptions={categoryOptions}
+        countryOptions={countryOptions}
         cityOptions={cityOptions}
-        priceOptions={priceOptions}
-        sortOptions={[
-          { value: "rating", label: "Rating" },
-          { value: "review", label: "Reviews" },
-        ]}
       />
 
       <ul className="restaurants">
         {restaurants
           .filter((r) => {
-            const matchCity = !filters.city || r.city === filters.city;
+            const matchCountry =
+              !filters.country || r.country === filters.country;
+            const matchCity =
+              !filters.city || r.city === filters.city;
             const matchCategory =
               !filters.category ||
-              (Array.isArray(r.categories)
-                ? r.categories.includes(filters.category)
-                : r.category === filters.category);
-          const matchPrice =
-  !filters.price ||
-  (r.price && String(r.price) === String(filters.price));
-
-
-            return matchCity && matchCategory && matchPrice;
+              (r.categories?.includes(filters.category) ||
+                r.category === filters.category);
+            return matchCountry && matchCity && matchCategory;
           })
           .sort((a, b) =>
             filters.sort === "review"
-              ? b.numRatings - a.numRatings
-              : b.avgRating - a.avgRating
+              ? b.review_count - a.review_count
+              : b.stars - a.stars
           )
           .map((restaurant) => (
             <RestaurantItem key={restaurant.id} restaurant={restaurant} />

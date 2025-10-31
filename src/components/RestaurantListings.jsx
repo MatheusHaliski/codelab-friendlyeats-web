@@ -4,7 +4,7 @@
 // It receives data from src/app/page.jsx, such as the initial restaurants and search params from the URL
 
 import Link from "next/link";
-import { React, useState, useEffect } from "react";
+import { React, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import renderStars from "@/src/components/Stars.jsx";
 import { getRestaurantsSnapshot } from "@/src/lib/firebase/firestore.js";
@@ -55,10 +55,49 @@ const RestaurantMetadata = ({ restaurant }) => (
   </div>
 );
 
-export default function RestaurantListings({
-  initialRestaurants,
-  searchParams,
-}) {
+function deriveAvailableFilters(restaurants = []) {
+  const categories = new Set();
+  const cities = new Set();
+
+  restaurants.forEach((restaurant) => {
+    if (Array.isArray(restaurant.categories)) {
+      restaurant.categories.forEach((category) => {
+        if (category) categories.add(category);
+      });
+    } else if (restaurant.category) {
+      categories.add(restaurant.category);
+    }
+
+    if (restaurant.city) {
+      cities.add(restaurant.city);
+    }
+  });
+
+  const sortAlphabetically = (a, b) => a.localeCompare(b);
+
+  return {
+    categories: Array.from(categories).sort(sortAlphabetically),
+    cities: Array.from(cities).sort(sortAlphabetically),
+  };
+}
+
+function mergeAvailableFilters(
+  previous = { categories: [], cities: [] },
+  next = { categories: [], cities: [] }
+) {
+  const unique = (values) => Array.from(new Set(values));
+
+  return {
+    categories: unique([...previous.categories, ...next.categories]).sort((a, b) =>
+      a.localeCompare(b)
+    ),
+    cities: unique([...previous.cities, ...next.cities]).sort((a, b) =>
+      a.localeCompare(b)
+    ),
+  };
+}
+
+export default function RestaurantListings({ initialRestaurants, searchParams }) {
   const router = useRouter();
 
   // The initial filters are the search params from the URL, useful for when the user refreshes the page
@@ -71,7 +110,9 @@ export default function RestaurantListings({
 
   const [restaurants, setRestaurants] = useState(initialRestaurants);
   const [filters, setFilters] = useState(initialFilters);
-
+  const [availableFilters, setAvailableFilters] = useState(() =>
+    deriveAvailableFilters(initialRestaurants)
+  );
   useEffect(() => {
     routerWithFilters(router, filters);
   }, [router, filters]);
@@ -81,10 +122,28 @@ export default function RestaurantListings({
       setRestaurants(data);
     }, filters);
   }, [filters]);
+ useEffect(() => {
+    const derived = deriveAvailableFilters(restaurants);
+    setAvailableFilters((previous) => mergeAvailableFilters(previous, derived));
+  }, [restaurants]);
+
+  const categoryOptions = useMemo(
+    () => ["", ...availableFilters.categories],
+    [availableFilters.categories]
+  );
+  const cityOptions = useMemo(
+    () => ["", ...availableFilters.cities],
+    [availableFilters.cities]
+  );
 
   return (
     <article>
-      <Filters filters={filters} setFilters={setFilters} />
+          <Filters
+        filters={filters}
+        setFilters={setFilters}
+        categoryOptions={categoryOptions}
+        cityOptions={cityOptions}
+      />
       <ul className="restaurants">
         {restaurants.map((restaurant) => (
           <RestaurantItem key={restaurant.id} restaurant={restaurant} />

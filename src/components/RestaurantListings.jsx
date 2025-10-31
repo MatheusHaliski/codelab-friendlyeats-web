@@ -133,13 +133,19 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
 
   return (
     <article>
-      <Filters
-        filters={filters}
-        setFilters={setFilters}
-        categoryOptions={categoryOptions}
-        countryOptions={countryOptions}
-        cityOptions={cityOptions}
-      />
+ <Filters
+  filters={filters}
+  setFilters={setFilters}
+  foodOptions={["", ...availableFilters.foodCategories]}
+  otherOptions={["", ...availableFilters.otherCategories]}
+  countryOptions={["", ...availableFilters.countries]}
+  cityOptions={
+    filters.country && availableFilters.citiesByCountry[filters.country]
+      ? ["", ...availableFilters.citiesByCountry[filters.country]]
+      : [""]
+  }
+/>
+
 
       <ul className="restaurants">
         {restaurants

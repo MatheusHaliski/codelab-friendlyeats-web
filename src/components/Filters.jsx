@@ -106,14 +106,15 @@ export default function Filters({
             icon="/location.svg"
           />
 
-          <FilterSelect
-            label="Price"
-            options={prices}
-            value={filters.price}
-            onChange={(event) => handleSelectionChange(event, "price")}
-            name="price"
-            icon="/price.svg"
-          />
+       <FilterSelect
+  label="Price"
+  options={["", "$", "$$", "$$$", "$$$$"]}
+  value={filters.price || ""}
+  onChange={(event) => handleSelectionChange(event, "price")}
+  name="price"
+  icon="/price.svg"
+/>
+
 
           <FilterSelect
             label="Sort"

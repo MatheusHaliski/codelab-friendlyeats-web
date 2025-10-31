@@ -26,7 +26,8 @@ function FilterSelect({ label, options, value, onChange, name, icon }) {
 export default function Filters({
   filters,
   setFilters,
-  categoryOptions = [""],
+  foodOptions = [""],
+  otherOptions = [""],
   countryOptions = [""],
   cityOptions = [""],
   sortOptions = [
@@ -34,6 +35,7 @@ export default function Filters({
     { value: "review", label: "Reviews" },
   ],
 }) {
+ {
   const handleSelectionChange = (event, name) => {
     const value = event.target.value;
     setFilters((prev) => ({

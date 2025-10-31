@@ -156,8 +156,10 @@ export default function RestaurantListings({ initialRestaurants = [], searchPara
               (Array.isArray(r.categories)
                 ? r.categories.includes(filters.category)
                 : r.category === filters.category);
-            const matchPrice =
-              !filters.price || String(r.price) === String(filters.price);
+          const matchPrice =
+  !filters.price ||
+  (r.price && String(r.price) === String(filters.price));
+
 
             return matchCity && matchCategory && matchPrice;
           })

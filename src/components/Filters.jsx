@@ -9,18 +9,40 @@ function FilterSelect({ label, options, value, onChange, name, icon }) {
       <label>
         {label}
         <select value={value} onChange={onChange} name={name}>
-          {options.map((option, index) => (
-            <option value={option} key={index}>
-              {option === "" ? "All" : option}
-            </option>
-          ))}
+   {options.map((option, index) => {
+            const optionValue = option ?? "";
+            const key = optionValue === "" ? `all-${index}` : optionValue;
+            return (
+              <option value={optionValue} key={key}>
+                {optionValue === "" ? "All" : optionValue}
+              </option>
+            );
+          })}
         </select>
       </label>
     </div>
   );
 }
 
-export default function Filters({ filters, setFilters }) {
+export default function Filters({
+  filters,
+  setFilters,
+  categoryOptions = [""],
+  cityOptions = [""],
+}) {
+  const ensureAllOption = (options) => {
+    if (!Array.isArray(options) || options.length === 0) {
+      return [""];
+    }
+    const normalized = options.filter((option) => option !== undefined && option !== null);
+    if (normalized.length === 0) {
+      return [""];
+    }
+    return normalized[0] === "" ? normalized : ["", ...normalized];
+  };
+
+  const categories = ensureAllOption(categoryOptions);
+  const cities = ensureAllOption(cityOptions);
   const handleSelectionChange = (event, name) => {
     setFilters((prevFilters) => ({
       ...prevFilters,
@@ -68,7 +90,7 @@ export default function Filters({ filters, setFilters }) {
               "Organic",
               "Tapas",
             ]}
-            value={filters.category}
+              options={categories}
             onChange={(event) => handleSelectionChange(event, "category")}
             name="category"
             icon="/food.svg"
@@ -90,7 +112,7 @@ export default function Filters({ filters, setFilters }) {
               "Singapore",
               "Istanbul",
             ]}
-            value={filters.city}
+            options={cities}
             onChange={(event) => handleSelectionChange(event, "city")}
             name="city"
             icon="/location.svg"

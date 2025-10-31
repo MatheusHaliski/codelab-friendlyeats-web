@@ -10,46 +10,26 @@ import Filters from "@/src/components/Filters.jsx";
 const RestaurantItem = ({ restaurant }) => (
   <li key={restaurant.id}>
     <Link href={`/restaurant/${restaurant.id}`}>
-      <ActiveResturant restaurant={restaurant} />
+      <div className="restaurant-card">
+        <div className="image-cover">
+          <img src={restaurant.photo} alt={restaurant.name} />
+        </div>
+        <div className="restaurant__details">
+          <h2>{restaurant.name}</h2>
+          <div className="restaurant__rating">
+            <ul>{renderStars(restaurant.avgRating)}</ul>
+            <span>({restaurant.numRatings})</span>
+          </div>
+          <div className="restaurant__meta">
+            <p>
+              {restaurant.category} | {restaurant.city}
+            </p>
+            <p>{"$".repeat(restaurant.price)}</p>
+          </div>
+        </div>
+      </div>
     </Link>
   </li>
-);
-
-const ActiveResturant = ({ restaurant }) => (
-  <div>
-    <ImageCover photo={restaurant.photo} name={restaurant.name} />
-    <ResturantDetails restaurant={restaurant} />
-  </div>
-);
-
-const ImageCover = ({ photo, name }) => (
-  <div className="image-cover">
-    <img src={photo} alt={name} />
-  </div>
-);
-
-const ResturantDetails = ({ restaurant }) => (
-  <div className="restaurant__details">
-    <h2>{restaurant.name}</h2>
-    <RestaurantRating restaurant={restaurant} />
-    <RestaurantMetadata restaurant={restaurant} />
-  </div>
-);
-
-const RestaurantRating = ({ restaurant }) => (
-  <div className="restaurant__rating">
-    <ul>{renderStars(restaurant.avgRating)}</ul>
-    <span>({restaurant.numRatings})</span>
-  </div>
-);
-
-const RestaurantMetadata = ({ restaurant }) => (
-  <div className="restaurant__meta">
-    <p>
-      {restaurant.category} | {restaurant.city}
-    </p>
-    <p>{"$".repeat(restaurant.price)}</p>
-  </div>
 );
 
 // -------------------------------
@@ -73,19 +53,14 @@ function deriveAvailableFilters(restaurants = []) {
     if (restaurant.price) prices.add(restaurant.price);
   });
 
-  const sortAlphabetically = (a, b) => a.localeCompare(b);
-
   return {
-    categories: Array.from(categories).sort(sortAlphabetically),
-    cities: Array.from(cities).sort(sortAlphabetically),
+    categories: Array.from(categories).sort((a, b) => a.localeCompare(b)),
+    cities: Array.from(cities).sort((a, b) => a.localeCompare(b)),
     prices: Array.from(prices).sort((a, b) => a - b),
   };
 }
 
-function mergeAvailableFilters(
-  previous = { categories: [], cities: [], prices: [] },
-  next = { categories: [], cities: [], prices: [] }
-) {
+function mergeAvailableFilters(previous, next) {
   const unique = (values) => Array.from(new Set(values));
 
   return {
@@ -102,14 +77,15 @@ function mergeAvailableFilters(
 // -------------------------------
 // Componente principal
 // -------------------------------
-export default function RestaurantListings({ initialRestaurants, searchParams }) {
+export default function RestaurantListings({ initialRestaurants = [], searchParams = {} }) {
   const router = useRouter();
 
+  // 🔹 Filtros iniciais vindos da URL
   const initialFilters = {
     city: searchParams.city || "",
     category: searchParams.category || "",
     price: searchParams.price || "",
-    sort: searchParams.sort || "rating", // padrão: rating
+    sort: searchParams.sort || "rating", // padrão
   };
 
   const [restaurants, setRestaurants] = useState(initialRestaurants);
@@ -118,21 +94,31 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
     deriveAvailableFilters(initialRestaurants)
   );
 
+  // 🔹 Atualiza URL ao mudar filtros
   useEffect(() => {
-    routerWithFilters(router, filters);
-  }, [router, filters]);
+    const queryParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value) queryParams.append(key, value);
+    }
+    router.push(`?${queryParams.toString()}`);
+  }, [filters, router]);
 
+  // 🔹 Atualiza dados Firestore em tempo real
   useEffect(() => {
-    return getRestaurantsSnapshot((data) => {
+    const unsubscribe = getRestaurantsSnapshot((data) => {
       setRestaurants(data);
     }, filters);
+
+    return () => unsubscribe && unsubscribe();
   }, [filters]);
 
+  // 🔹 Atualiza filtros disponíveis quando lista muda
   useEffect(() => {
     const derived = deriveAvailableFilters(restaurants);
     setAvailableFilters((previous) => mergeAvailableFilters(previous, derived));
   }, [restaurants]);
 
+  // 🔹 Opções para selects
   const categoryOptions = useMemo(
     () => ["", ...availableFilters.categories],
     [availableFilters.categories]
@@ -146,6 +132,7 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
     [availableFilters.prices]
   );
 
+  // 🔹 Renderização final
   return (
     <article>
       <Filters
@@ -162,10 +149,6 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
 
       <ul className="restaurants">
         {restaurants
-          .sort((a, b) => {
-            if (filters.sort === "review") return b.numRatings - a.numRatings;
-            return b.avgRating - a.avgRating;
-          })
           .filter((r) => {
             const matchCity = !filters.city || r.city === filters.city;
             const matchCategory =
@@ -178,23 +161,15 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
 
             return matchCity && matchCategory && matchPrice;
           })
+          .sort((a, b) =>
+            filters.sort === "review"
+              ? b.numRatings - a.numRatings
+              : b.avgRating - a.avgRating
+          )
           .map((restaurant) => (
             <RestaurantItem key={restaurant.id} restaurant={restaurant} />
           ))}
       </ul>
     </article>
   );
-}
-
-function routerWithFilters(router, filters) {
-  const queryParams = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(filters)) {
-    if (value !== undefined && value !== "") {
-      queryParams.append(key, value);
-    }
-  }
-
-  const queryString = queryParams.toString();
-  router.push(`?${queryString}`);
 }

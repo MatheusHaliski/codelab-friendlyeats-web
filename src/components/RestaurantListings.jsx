@@ -135,18 +135,19 @@ const initialFilters = {
 
   return (
     <article>
- <Filters
+<Filters
   filters={filters}
   setFilters={setFilters}
-  foodOptions={["", ...availableFilters.foodCategories]}
-  otherOptions={["", ...availableFilters.otherCategories]}
-  countryOptions={["", ...availableFilters.countries]}
+  foodOptions={availableFilters?.foodCategories || [""]}
+  otherOptions={availableFilters?.otherCategories || [""]}
+  countryOptions={availableFilters?.countries || [""]}
   cityOptions={
-    filters.country && availableFilters.citiesByCountry[filters.country]
+    filters.country && availableFilters?.citiesByCountry?.[filters.country]
       ? ["", ...availableFilters.citiesByCountry[filters.country]]
       : [""]
   }
 />
+
 
 
       <ul className="restaurants">

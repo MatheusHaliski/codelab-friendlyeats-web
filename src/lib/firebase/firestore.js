@@ -1,4 +1,4 @@
-
+// 🔹 Imports principais do Firebase
 import {
   collection,
   doc,
@@ -20,207 +20,238 @@ function resolveFirestoreInstance(possibleDb) {
   return possibleDb ?? db;
 }
 
+function isFirestoreInstance(value) {
+  if (!value || typeof value !== "object") return false;
+  return (
+    typeof value._delegate === "object" ||
+    typeof value._databaseId === "object" ||
+    value.type === "firestore"
+  );
+}
 
-  export async function updateRestaurantImageReference(
-    restaurantId,
-    publicImageUrl,
-    firestoreInstance
-  ) {
-    if (!restaurantId || !publicImageUrl) return;
+export async function updateRestaurantImageReference(
+  restaurantId,
+  publicImageUrl,
+  firestoreInstance
+) {
+  if (!restaurantId || !publicImageUrl) return;
 
-    const database = resolveFirestoreInstance(firestoreInstance);
-    const restaurantRef = doc(database, "restaurants", restaurantId);
-    await updateDoc(restaurantRef, { photo: publicImageUrl });
+  const restaurantRef = doc(db, "restaurants", restaurantId);
+  const database = resolveFirestoreInstance(firestoreInstance);
+  const restaurantRef = doc(database, "restaurants", restaurantId);
+  await updateDoc(restaurantRef, { photo: publicImageUrl });
+}
 
+async function updateWithRating(transaction, docRef, newRatingDocument, review) {
+  const restaurantSnapshot = await transaction.get(docRef);
+
+  if (!restaurantSnapshot.exists()) {
+    throw new Error("Restaurant not found");
   }
 
-// 🔹 Adiciona avaliação e atualiza médias
-  async function updateWithRating(transaction, docRef, newRatingDocument, review) {
-    const restaurantSnapshot = await transaction.get(docRef);
+  const data = restaurantSnapshot.data();
+  const currentNumRatings = data.numRatings || 0;
+  const currentSumRating = data.sumRating || 0;
+  const currentReviewCount = data.review_count ?? data.numRatings ?? 0;
+  const currentAverageRating = data.stars ?? data.avgRating ?? 0;
 
-    if (!restaurantSnapshot.exists()) {
-      throw new Error("Restaurant not found");
-    }
-
-    const data = restaurantSnapshot.data();
-    const currentReviewCount = data.review_count ?? data.numRatings ?? 0;
-    const currentAverageRating = data.stars ?? data.avgRating ?? 0;
-
-    const updatedReviewCount = currentReviewCount + 1;
-    const updatedAverageRating =
-      updatedReviewCount > 0
-        ? (currentAverageRating * currentReviewCount + review.rating) /
+  const updatedNumRatings = currentNumRatings + 1;
+  const updatedSumRating = currentSumRating + review.rating;
+  const updatedAvgRating =
+    updatedNumRatings > 0 ? updatedSumRating / updatedNumRatings : 0;
+  const updatedReviewCount = currentReviewCount + 1;
+  const updatedAverageRating =
+    updatedReviewCount > 0
+      ? (currentAverageRating * currentReviewCount + review.rating) /
         updatedReviewCount
-        : 0;
+      : 0;
 
-    transaction.set(newRatingDocument, review);
-    transaction.update(docRef, {
-      review_count: updatedReviewCount,
-      stars: updatedAverageRating,
-    });
+  transaction.set(newRatingDocument, review);
+  transaction.update(docRef, {
+    numRatings: updatedNumRatings,
+    sumRating: updatedSumRating,
+    avgRating: updatedAvgRating,
+    review_count: updatedReviewCount,
+    stars: updatedAverageRating,
+  });
+}
+
+export async function addReviewToRestaurant(
+  firestoreOrRestaurantId,
+  maybeRestaurantId,
+  maybeReview
+) {
+  const isRestaurantIdFirstArg = typeof firestoreOrRestaurantId === "string";
+  const database = resolveFirestoreInstance(
+    isRestaurantIdFirstArg ? undefined : firestoreOrRestaurantId
+  );
+  const restaurantId = isRestaurantIdFirstArg
+    ? firestoreOrRestaurantId
+    : maybeRestaurantId;
+  const review = isRestaurantIdFirstArg ? maybeRestaurantId : maybeReview;
+
+  if (!restaurantId) throw new Error("A restaurantId is required");
+  if (!review || typeof review.rating !== "number")
+    throw new Error("A numeric rating is required");
+
+  const restaurantRef = doc(database, "restaurants", restaurantId);
+  const ratingsCollection = collection(
+    database,
+    "restaurants",
+    restaurantId,
+    "ratings"
+  );
+  const newRatingDocument = doc(ratingsCollection);
+
+  const reviewWithMetadata = {
+    ...review,
+    rating: Number(review.rating),
+    timestamp: Timestamp.now(),
+  };
+
+  await runTransaction(database, async (transaction) => {
+    await updateWithRating(
+      transaction,
+      restaurantRef,
+      newRatingDocument,
+      reviewWithMetadata
+    );
+  });
+}
+
+function applyQueryFilters(baseRef, { category, city, price, sort }) {
+  const constraints = [];
+
+  if (category) constraints.push(where("categories", "array-contains", category));
+  if (city) constraints.push(where("city", "==", city));
+
+  if (price) {
+    let priceValue = price;
+    if (typeof price === "string") {
+      priceValue = price.startsWith("$") ? price.length : Number(price);
+    }
+    const numericPrice = Number(priceValue);
+    if (Number.isFinite(numericPrice)) {
+      constraints.push(where("price", "==", numericPrice));
+    } else {
+      console.warn("Ignoring invalid price filter", price);
+    }
   }
 
-    export async function addReviewToRestaurant(
-      firestoreOrRestaurantId,
-      maybeRestaurantId,
-      maybeReview
-    ) {
-      const isRestaurantIdFirstArg = typeof firestoreOrRestaurantId === "string";
-      const database = resolveFirestoreInstance(
-        isRestaurantIdFirstArg ? undefined : firestoreOrRestaurantId
-      );
-      const restaurantId = isRestaurantIdFirstArg
-        ? firestoreOrRestaurantId
-        : maybeRestaurantId;
-      const review = isRestaurantIdFirstArg ? maybeRestaurantId : maybeReview;
+  const sortField = sort === "Review" ? "review_count" : "stars";
+  constraints.push(orderBy(sortField, "desc"));
 
-      if (!restaurantId) throw new Error("A restaurantId is required");
-      if (!review || typeof review.rating !== "number")
-        throw new Error("A numeric rating is required");
+  return query(baseRef, ...constraints);
+}
 
-      const restaurantRef = doc(database, "restaurants", restaurantId);
-      const ratingsCollection = collection(
-        database,
-        "restaurants",
-        restaurantId,
-        "ratings"
-      );
-      const newRatingDocument = doc(ratingsCollection);
+export async function getRestaurants(possibleDbOrFilters = {}, maybeFilters) {
+  const hasExplicitDb = isFirestoreInstance(possibleDbOrFilters);
+  const filters = (hasExplicitDb ? maybeFilters : possibleDbOrFilters) ?? {};
+  const database = resolveFirestoreInstance(
+    hasExplicitDb ? possibleDbOrFilters : undefined
+  );
 
-      const reviewWithMetadata = {
-        ...review,
-        rating: Number(review.rating),
-        timestamp: Timestamp.now(),
-      };
+  const restaurantsRef = collection(database, "restaurants");
+  const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
+  const results = await getDocs(restaurantsQuery);
 
-        await runTransaction(database, async (transaction) => {
-          await updateWithRating(
-            transaction,
-            restaurantRef,
-            newRatingDocument,
-            reviewWithMetadata
-          );
-        });
-      }
+  return results.docs.map(normalizeRestaurantSnapshot);
+}
 
-// 🔹 Aplica filtros de consulta
-      function applyQueryFilters(baseRef, { category, city, price, sort }) {
-        const constraints = [];
+export function getRestaurantsSnapshot(
+  cbOrFirestore,
+  maybeCallback,
+  maybeFilters = {}
+) {
+  const hasExplicitDb = isFirestoreInstance(cbOrFirestore);
+  const callback = hasExplicitDb ? maybeCallback : cbOrFirestore;
+  const filters = (hasExplicitDb ? maybeFilters : maybeCallback) ?? {};
 
-        if (category) constraints.push(where("categories", "array-contains", category));
-        if (city) constraints.push(where("city", "==", city));
+  if (typeof callback !== "function") {
+    throw new Error("A callback function is required for getRestaurantsSnapshot");
+  }
 
-        if (price) {
-          let priceValue = price;
-          if (typeof price === "string") {
-            priceValue = price.startsWith("$") ? price.length : Number(price);
-          }
-          const numericPrice = Number(priceValue);
-          if (Number.isFinite(numericPrice)) {
-            constraints.push(where("price", "==", numericPrice));
-          } else {
-            console.warn("Ignoring invalid price filter", price);
-          }
-        }
+  const database = resolveFirestoreInstance(
+    hasExplicitDb ? cbOrFirestore : undefined
+  );
 
-        const sortField = sort === "Review" ? "review_count" : "stars";
-        constraints.push(orderBy(sortField, "desc"));
+  const restaurantsRef = collection(database, "restaurants");
+  const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
 
-        return query(baseRef, ...constraints);
-      }
-
-// 🔹 Retorna lista de restaurantes
-      export async function getRestaurants(filters = {}) {
-        const restaurantsRef = collection(db, "restaurants");
-        const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
-        const results = await getDocs(restaurantsQuery);
-
-        return results.docs.map(normalizeRestaurantSnapshot);
-      }
-
-// 🔹 Escuta mudanças em tempo real
-      export function getRestaurantsSnapshot(cb, filters = {}) {
-        const restaurantsRef = collection(db, "restaurants");
-        const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
-
-        return onSnapshot(restaurantsQuery, (querySnapshot) => {
-
-          const results = querySnapshot.docs.map(normalizeRestaurantSnapshot);
-          cb(results);
-        });
-      }
+  return onSnapshot(restaurantsQuery, (querySnapshot) => {
+    const results = querySnapshot.docs.map(normalizeRestaurantSnapshot);
+    callback(results);
+  });
+}
 
 // 🔹 Busca restaurante por ID
-      export async function getRestaurantById(restaurantId) {
-        if (!restaurantId) return null;
-        const docRef = doc(db, "restaurants", restaurantId);
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) return null;
+export async function getRestaurantById(restaurantId) {
+  if (!restaurantId) return null;
+  const docRef = doc(db, "restaurants", restaurantId);
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) return null;
 
-        return normalizeRestaurantSnapshot(docSnap);
-      }
+  return normalizeRestaurantSnapshot(docSnap);
+}
 
 // 🔹 Escuta um restaurante específico
-      export function getRestaurantSnapshotById(restaurantId, cb) {
-        if (!restaurantId) return;
-        const docRef = doc(db, "restaurants", restaurantId);
+export function getRestaurantSnapshotById(restaurantId, cb) {
+  if (!restaurantId) return;
+  const docRef = doc(db, "restaurants", restaurantId);
 
-        return onSnapshot(docRef, (docSnapshot) => {
-          const data = docSnapshot.data();
-          if (!data) {
-            cb(undefined);
-            return;
-          }
-          cb(normalizeRestaurantSnapshot(docSnapshot));
-        });
-      }
+  return onSnapshot(docRef, (docSnapshot) => {
+    const data = docSnapshot.data();
+    if (!data) {
+      cb(undefined);
+      return;
+    }
+    cb(normalizeRestaurantSnapshot(docSnapshot));
+  });
+}
 
-      function normalizeRestaurantSnapshot(docSnapshot) {
-        const data = docSnapshot.data();
-        const timestamp = data.timestamp?.toDate ? data.timestamp.toDate() : null;
+function normalizeRestaurantSnapshot(docSnapshot) {
+  const data = docSnapshot.data();
+  const timestamp = data.timestamp?.toDate ? data.timestamp.toDate() : null;
 
-        const categories = Array.isArray(data.categories)
-          ? data.categories
-          : data.category
-            ? [data.category]
-            : [];
-        const primaryCategory = data.category ?? categories[0] ?? "";
+  const categories = Array.isArray(data.categories)
+    ? data.categories
+    : data.category
+    ? [data.category]
+    : [];
+  const primaryCategory = data.category ?? categories[0] ?? "";
 
-        const reviewCount = data.review_count ?? data.numRatings ?? 0;
-        const averageRating = data.stars ?? data.avgRating ?? 0;
-        const price = Number.isFinite(data.price) ? data.price : 0;
-        const city =  data.city ?? "";
-        const address = data.address ?? data.address;
-        const state = data.state;
-        return {
-          id: docSnapshot.id,
-          ...data,
-          categories,
-          city,
-          address,
-          state,
-          category: primaryCategory,
-          review_count: reviewCount,
-          stars: averageRating,
-          numRatings: reviewCount,
-          avgRating: averageRating,
-          price,
-          timestamp,
-        };
-      }
+  const reviewCount = data.review_count ?? data.numRatings ?? 0;
+  const averageRating = data.stars ?? data.avgRating ?? 0;
+  const price = Number.isFinite(data.price) ? data.price : 0;
+  const city = data.city ?? data.location?.city ?? "";
+
+  return {
+    id: docSnapshot.id,
+    ...data,
+    categories,
+    category: primaryCategory,
+    city,
+    review_count: reviewCount,
+    stars: averageRating,
+    numRatings: reviewCount,
+    avgRating: averageRating,
+    price,
+    timestamp,
+  };
+}
 
 // 🔹 Busca reviews de um restaurante
-      export async function getReviewsByRestaurantId(restaurantId) {
-        if (!restaurantId) return [];
-        const q = query(
-          collection(db, "restaurants", restaurantId, "ratings"),
-          orderBy("timestamp", "desc")
-        );
-        const results = await getDocs(q);
+export async function getReviewsByRestaurantId(restaurantId) {
+  if (!restaurantId) return [];
+  const q = query(
+    collection(db, "restaurants", restaurantId, "ratings"),
+    orderBy("timestamp", "desc")
+  );
+  const results = await getDocs(q);
 
-        return results.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp.toDate(),
-        }));
-      }
+  return results.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    timestamp: doc.data().timestamp.toDate(),
+  }));
+}

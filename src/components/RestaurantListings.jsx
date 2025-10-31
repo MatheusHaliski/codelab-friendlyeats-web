@@ -150,6 +150,7 @@ const initialFilters = {
 
 
 
+
       <ul className="restaurants">
         {restaurants
           .filter((r) => {

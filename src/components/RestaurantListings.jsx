@@ -33,6 +33,21 @@ const RestaurantItem = ({ restaurant }) => (
 // Geração dinâmica de filtros
 // -------------------------------
 function deriveAvailableFilters(restaurants = []) {
+  const keywords_food = [
+  "Food", "Restaurant", "Pizza", "Coffee", "Tea", "Bars", "Burgers", "Breakfast", "Brunch",
+  "Italian", "Chinese", "Japanese", "Mexican", "Indian", "Mediterranean", "Caribbean",
+  "Cajun", "German", "Russian", "Cuban", "Organic", "Tapas", "Bowls", "Sushi", "Fast Food",
+  "Sandwiches", "Salad", "Vegan", "Vegetarian", "Desserts", "Juice", "Smoothies", "Cafes",
+  "Diners", "Seafood", "Steakhouse", "Poke", "Buffets", "Ramen", "Greek", "Korean"
+];
+
+const keywords_others = [
+  "Home", "Technology", "Accessories", "Arcades", "Art", "Business", "Consulting",
+  "Club", "School", "Tree", "Work", "House", "Drug", "Medical", "Assistant", "Education",
+  "Health", "Cleaning", "Entertainment", "Spa", "Travel", "Bank", "Hotel", "Market",
+  "Shop", "Car", "Service", "Pet", "Doctor", "Museum", "Park"
+];
+
   const categories = new Set();
   const citiesByCountry = {};
   const countries = new Set();
@@ -56,8 +71,16 @@ function deriveAvailableFilters(restaurants = []) {
       }
     }
   });
-
+const allCategories = Array.from(categories).sort();
+const foodCategories = allCategories.filter(cat =>
+  keywords_food.some(keyword => cat.toLowerCase().includes(keyword.toLowerCase()))
+);
+const otherCategories = allCategories.filter(cat =>
+  keywords_others.some(keyword => cat.toLowerCase().includes(keyword.toLowerCase()))
+);
   return {
+    foodCategories,
+    otherCategories,
     categories: Array.from(categories).sort(),
     countries: Array.from(countries).sort(),
     citiesByCountry: Object.fromEntries(

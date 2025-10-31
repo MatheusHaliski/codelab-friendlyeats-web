@@ -158,12 +158,7 @@ export async function getRestaurants(possibleDbOrFilters = {}, maybeFilters) {
   return results.docs.map(normalizeRestaurantSnapshot);
 }
 
-// 🔹 Escuta em tempo real
-export function getRestaurantsSnapshot(
-  cbOrFirestore,
-  maybeCallback,
-  maybeFilters = {}
-) {
+export function getRestaurantsSnapshot(cbOrFirestore, maybeCallback, maybeFilters = {}) {
   const hasExplicitDb = isFirestoreInstance(cbOrFirestore);
   const callback = hasExplicitDb ? maybeCallback : cbOrFirestore;
   const filters = (hasExplicitDb ? maybeFilters : maybeCallback) ?? {};
@@ -172,18 +167,20 @@ export function getRestaurantsSnapshot(
     throw new Error("A callback function is required for getRestaurantsSnapshot");
   }
 
-  const database = resolveFirestoreInstance(
-    hasExplicitDb ? cbOrFirestore : undefined
-  );
-
+  const database = resolveFirestoreInstance(hasExplicitDb ? cbOrFirestore : undefined);
   const restaurantsRef = collection(database, "restaurants");
   const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
 
-  return onSnapshot(restaurantsQuery, (querySnapshot) => {
-    const results = querySnapshot.docs.map(normalizeRestaurantSnapshot);
-    callback(results);
-  });
+  try {
+    return onSnapshot(restaurantsQuery, (querySnapshot) => {
+      const results = querySnapshot.docs.map(normalizeRestaurantSnapshot);
+      callback(results);
+    });
+  } catch (error) {
+    console.error("🔥 Firestore snapshot error:", error);
+  }
 }
+
 
 // 🔹 Busca restaurante por ID
 export async function getRestaurantById(restaurantId) {

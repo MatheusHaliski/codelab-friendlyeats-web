@@ -35,6 +35,7 @@ export default function Filters({
     { value: "review", label: "Reviews" },
   ],
 }) {
+
  {
   const handleSelectionChange = (event, name) => {
     const value = event.target.value;

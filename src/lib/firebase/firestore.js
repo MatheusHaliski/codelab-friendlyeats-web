@@ -29,22 +29,21 @@ function isFirestoreInstance(value) {
   );
 }
 
+// ✅ Corrigido: remover duplicação da referência
 export async function updateRestaurantImageReference(
   restaurantId,
   publicImageUrl,
   firestoreInstance
 ) {
   if (!restaurantId || !publicImageUrl) return;
-
-  const restaurantRef = doc(db, "restaurants", restaurantId);
   const database = resolveFirestoreInstance(firestoreInstance);
   const restaurantRef = doc(database, "restaurants", restaurantId);
   await updateDoc(restaurantRef, { photo: publicImageUrl });
 }
 
+// 🔹 Atualiza média e contadores de reviews
 async function updateWithRating(transaction, docRef, newRatingDocument, review) {
   const restaurantSnapshot = await transaction.get(docRef);
-
   if (!restaurantSnapshot.exists()) {
     throw new Error("Restaurant not found");
   }
@@ -76,6 +75,7 @@ async function updateWithRating(transaction, docRef, newRatingDocument, review) 
   });
 }
 
+// 🔹 Adiciona review ao restaurante
 export async function addReviewToRestaurant(
   firestoreOrRestaurantId,
   maybeRestaurantId,
@@ -119,12 +119,18 @@ export async function addReviewToRestaurant(
   });
 }
 
+// 🔹 Aplica filtros do front-end no Firestore
 function applyQueryFilters(baseRef, { category, city, price, sort }) {
   const constraints = [];
 
-  if (category) constraints.push(where("categories", "array-contains", category));
+  // 🔸 Filtra por categoria (array-contains)
+  if (category)
+    constraints.push(where("categories", "array-contains", category));
+
+  // 🔸 Filtra por cidade
   if (city) constraints.push(where("city", "==", city));
 
+  // 🔸 Filtra por preço
   if (price) {
     let priceValue = price;
     if (typeof price === "string") {
@@ -134,16 +140,19 @@ function applyQueryFilters(baseRef, { category, city, price, sort }) {
     if (Number.isFinite(numericPrice)) {
       constraints.push(where("price", "==", numericPrice));
     } else {
-      console.warn("Ignoring invalid price filter", price);
+      console.warn("Ignoring invalid price filter:", price);
     }
   }
 
-  const sortField = sort === "Review" ? "review_count" : "stars";
+  // 🔸 Ordenação dinâmica: por review_count ou avgRating/stars
+  const sortField =
+    sort?.toLowerCase() === "review" ? "review_count" : "stars";
   constraints.push(orderBy(sortField, "desc"));
 
   return query(baseRef, ...constraints);
 }
 
+// 🔹 Retorna lista única (promessa)
 export async function getRestaurants(possibleDbOrFilters = {}, maybeFilters) {
   const hasExplicitDb = isFirestoreInstance(possibleDbOrFilters);
   const filters = (hasExplicitDb ? maybeFilters : possibleDbOrFilters) ?? {};
@@ -158,6 +167,7 @@ export async function getRestaurants(possibleDbOrFilters = {}, maybeFilters) {
   return results.docs.map(normalizeRestaurantSnapshot);
 }
 
+// 🔹 Escuta em tempo real
 export function getRestaurantsSnapshot(
   cbOrFirestore,
   maybeCallback,
@@ -190,11 +200,10 @@ export async function getRestaurantById(restaurantId) {
   const docRef = doc(db, "restaurants", restaurantId);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) return null;
-
   return normalizeRestaurantSnapshot(docSnap);
 }
 
-// 🔹 Escuta um restaurante específico
+// 🔹 Escuta restaurante por ID
 export function getRestaurantSnapshotById(restaurantId, cb) {
   if (!restaurantId) return;
   const docRef = doc(db, "restaurants", restaurantId);
@@ -209,6 +218,7 @@ export function getRestaurantSnapshotById(restaurantId, cb) {
   });
 }
 
+// 🔹 Normaliza snapshot do Firestore
 function normalizeRestaurantSnapshot(docSnapshot) {
   const data = docSnapshot.data();
   const timestamp = data.timestamp?.toDate ? data.timestamp.toDate() : null;

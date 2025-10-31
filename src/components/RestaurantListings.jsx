@@ -1,8 +1,5 @@
 "use client";
 
-// This components handles the restaurant listings page
-// It receives data from src/app/page.jsx, such as the initial restaurants and search params from the URL
-
 import Link from "next/link";
 import { React, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -55,9 +52,13 @@ const RestaurantMetadata = ({ restaurant }) => (
   </div>
 );
 
+// -------------------------------
+// Funções auxiliares
+// -------------------------------
 function deriveAvailableFilters(restaurants = []) {
   const categories = new Set();
   const cities = new Set();
+  const prices = new Set();
 
   restaurants.forEach((restaurant) => {
     if (Array.isArray(restaurant.categories)) {
@@ -68,9 +69,8 @@ function deriveAvailableFilters(restaurants = []) {
       categories.add(restaurant.category);
     }
 
-    if (restaurant.city) {
-      cities.add(restaurant.city);
-    }
+    if (restaurant.city) cities.add(restaurant.city);
+    if (restaurant.price) prices.add(restaurant.price);
   });
 
   const sortAlphabetically = (a, b) => a.localeCompare(b);
@@ -78,12 +78,13 @@ function deriveAvailableFilters(restaurants = []) {
   return {
     categories: Array.from(categories).sort(sortAlphabetically),
     cities: Array.from(cities).sort(sortAlphabetically),
+    prices: Array.from(prices).sort((a, b) => a - b),
   };
 }
 
 function mergeAvailableFilters(
-  previous = { categories: [], cities: [] },
-  next = { categories: [], cities: [] }
+  previous = { categories: [], cities: [], prices: [] },
+  next = { categories: [], cities: [], prices: [] }
 ) {
   const unique = (values) => Array.from(new Set(values));
 
@@ -94,18 +95,21 @@ function mergeAvailableFilters(
     cities: unique([...previous.cities, ...next.cities]).sort((a, b) =>
       a.localeCompare(b)
     ),
+    prices: unique([...previous.prices, ...next.prices]).sort((a, b) => a - b),
   };
 }
 
+// -------------------------------
+// Componente principal
+// -------------------------------
 export default function RestaurantListings({ initialRestaurants, searchParams }) {
   const router = useRouter();
 
-  // The initial filters are the search params from the URL, useful for when the user refreshes the page
   const initialFilters = {
     city: searchParams.city || "",
     category: searchParams.category || "",
     price: searchParams.price || "",
-    sort: searchParams.sort || "",
+    sort: searchParams.sort || "rating", // padrão: rating
   };
 
   const [restaurants, setRestaurants] = useState(initialRestaurants);
@@ -113,6 +117,7 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
   const [availableFilters, setAvailableFilters] = useState(() =>
     deriveAvailableFilters(initialRestaurants)
   );
+
   useEffect(() => {
     routerWithFilters(router, filters);
   }, [router, filters]);
@@ -122,7 +127,8 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
       setRestaurants(data);
     }, filters);
   }, [filters]);
- useEffect(() => {
+
+  useEffect(() => {
     const derived = deriveAvailableFilters(restaurants);
     setAvailableFilters((previous) => mergeAvailableFilters(previous, derived));
   }, [restaurants]);
@@ -135,19 +141,46 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
     () => ["", ...availableFilters.cities],
     [availableFilters.cities]
   );
+  const priceOptions = useMemo(
+    () => ["", ...availableFilters.prices],
+    [availableFilters.prices]
+  );
 
   return (
     <article>
-          <Filters
+      <Filters
         filters={filters}
         setFilters={setFilters}
         categoryOptions={categoryOptions}
         cityOptions={cityOptions}
+        priceOptions={priceOptions}
+        sortOptions={[
+          { value: "rating", label: "Rating" },
+          { value: "review", label: "Reviews" },
+        ]}
       />
+
       <ul className="restaurants">
-        {restaurants.map((restaurant) => (
-          <RestaurantItem key={restaurant.id} restaurant={restaurant} />
-        ))}
+        {restaurants
+          .sort((a, b) => {
+            if (filters.sort === "review") return b.numRatings - a.numRatings;
+            return b.avgRating - a.avgRating;
+          })
+          .filter((r) => {
+            const matchCity = !filters.city || r.city === filters.city;
+            const matchCategory =
+              !filters.category ||
+              (Array.isArray(r.categories)
+                ? r.categories.includes(filters.category)
+                : r.category === filters.category);
+            const matchPrice =
+              !filters.price || String(r.price) === String(filters.price);
+
+            return matchCity && matchCategory && matchPrice;
+          })
+          .map((restaurant) => (
+            <RestaurantItem key={restaurant.id} restaurant={restaurant} />
+          ))}
       </ul>
     </article>
   );

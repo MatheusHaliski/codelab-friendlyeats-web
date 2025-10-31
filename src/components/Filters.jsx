@@ -9,12 +9,15 @@ function FilterSelect({ label, options, value, onChange, name, icon }) {
       <label>
         {label}
         <select value={value} onChange={onChange} name={name}>
-   {options.map((option, index) => {
-            const optionValue = option ?? "";
+          {options.map((option, index) => {
+            const optionValue =
+              typeof option === "string" ? option : option.value ?? "";
+            const optionLabel =
+              typeof option === "string" ? option : option.label ?? option.value;
             const key = optionValue === "" ? `all-${index}` : optionValue;
             return (
               <option value={optionValue} key={key}>
-                {optionValue === "" ? "All" : optionValue}
+                {optionValue === "" ? "All" : optionLabel}
               </option>
             );
           })}
@@ -29,20 +32,27 @@ export default function Filters({
   setFilters,
   categoryOptions = [""],
   cityOptions = [""],
+  priceOptions = ["", "$", "$$", "$$$", "$$$$"],
+  sortOptions = [
+    { value: "rating", label: "Rating" },
+    { value: "review", label: "Review" },
+  ],
 }) {
   const ensureAllOption = (options) => {
     if (!Array.isArray(options) || options.length === 0) {
       return [""];
     }
-    const normalized = options.filter((option) => option !== undefined && option !== null);
-    if (normalized.length === 0) {
-      return [""];
-    }
+    const normalized = options.filter(
+      (option) => option !== undefined && option !== null
+    );
+    if (normalized.length === 0) return [""];
     return normalized[0] === "" ? normalized : ["", ...normalized];
   };
 
   const categories = ensureAllOption(categoryOptions);
   const cities = ensureAllOption(cityOptions);
+  const prices = ensureAllOption(priceOptions);
+
   const handleSelectionChange = (event, name) => {
     setFilters((prevFilters) => ({
       ...prevFilters,
@@ -61,7 +71,12 @@ export default function Filters({
           <img src="/filter.svg" alt="filter" />
           <div>
             <p>Restaurants</p>
-            <p>Sorted by {filters.sort || "Rating"}</p>
+            <p>
+              Sorted by{" "}
+              {filters.sort === "review"
+                ? "Number of Reviews"
+                : "Average Rating"}
+            </p>
           </div>
         </summary>
 
@@ -74,23 +89,8 @@ export default function Filters({
         >
           <FilterSelect
             label="Category"
-            options={[
-              "",
-              "Italian",
-              "Chinese",
-              "Japanese",
-              "Mexican",
-              "Indian",
-              "Mediterranean",
-              "Caribbean",
-              "Cajun",
-              "German",
-              "Russian",
-              "Cuban",
-              "Organic",
-              "Tapas",
-            ]}
-              options={categories}
+            options={categories}
+            value={filters.category}
             onChange={(event) => handleSelectionChange(event, "category")}
             name="category"
             icon="/food.svg"
@@ -98,21 +98,8 @@ export default function Filters({
 
           <FilterSelect
             label="City"
-            options={[
-              "",
-              "New York",
-              "Los Angeles",
-              "London",
-              "Paris",
-              "Tokyo",
-              "Mumbai",
-              "Dubai",
-              "Amsterdam",
-              "Seoul",
-              "Singapore",
-              "Istanbul",
-            ]}
             options={cities}
+            value={filters.city}
             onChange={(event) => handleSelectionChange(event, "city")}
             name="city"
             icon="/location.svg"
@@ -120,7 +107,7 @@ export default function Filters({
 
           <FilterSelect
             label="Price"
-            options={["", "$", "$$", "$$$", "$$$$"]}
+            options={prices}
             value={filters.price}
             onChange={(event) => handleSelectionChange(event, "price")}
             name="price"
@@ -129,7 +116,7 @@ export default function Filters({
 
           <FilterSelect
             label="Sort"
-            options={["Rating", "Review"]}
+            options={sortOptions}
             value={filters.sort}
             onChange={(event) => handleSelectionChange(event, "sort")}
             name="sort"
@@ -146,7 +133,7 @@ export default function Filters({
                     city: "",
                     category: "",
                     price: "",
-                    sort: "",
+                    sort: "rating",
                   });
                 }}
               >
@@ -162,15 +149,10 @@ export default function Filters({
 
       <div className="tags">
         {Object.entries(filters).map(([type, value]) => {
-          // The main filter bar already specifies what
-          // sorting is being used. So skip showing the
-          // sorting as a 'tag'
-          if (type == "sort" || value == "") {
-            return null;
-          }
+          if (type === "sort" || value === "") return null;
           return (
             <Tag
-              key={value}
+              key={type + value}
               type={type}
               value={value}
               updateField={updateField}

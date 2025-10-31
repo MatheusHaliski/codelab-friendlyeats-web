@@ -84,7 +84,7 @@ export default function Filters({
             value={filters.country}
             onChange={(e) => handleSelectionChange(e, "country")}
             name="country"
-            icon="/globe.svg"
+            icon="/globe.png"
           />
 
           <FilterSelect

@@ -69,14 +69,24 @@ export default function Filters({
             e.target.parentNode.removeAttribute("open");
           }}
         >
-          <FilterSelect
-            label="Category"
-            options={categoryOptions}
-            value={filters.category}
-            onChange={(e) => handleSelectionChange(e, "category")}
-            name="category"
-            icon="/food.svg"
-          />
+         <FilterSelect
+  label="Food Categories"
+  options={foodOptions}
+  value={filters.category}
+  onChange={(e) => handleSelectionChange(e, "category")}
+  name="foodCategory"
+  icon="/food.svg"
+/>
+
+<FilterSelect
+  label="Other Categories"
+  options={otherOptions}
+  value={filters.category}
+  onChange={(e) => handleSelectionChange(e, "category")}
+  name="otherCategory"
+  icon="/other.svg"
+/>
+
 
           <FilterSelect
             label="Country"

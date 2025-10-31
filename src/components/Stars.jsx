@@ -1,4 +1,4 @@
-// This component displays star ratings
+"use client";
 
 export default function renderStars(avgRating) {
   const arr = [];

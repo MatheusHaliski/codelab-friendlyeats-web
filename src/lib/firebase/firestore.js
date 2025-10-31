@@ -119,38 +119,29 @@ export async function addReviewToRestaurant(
   });
 }
 
-// 🔹 Aplica filtros do front-end no Firestore
 function applyQueryFilters(baseRef, { category, city, price, sort }) {
   const constraints = [];
 
-  // 🔸 Filtra por categoria (array-contains)
-  if (category)
-    constraints.push(where("categories", "array-contains", category));
+  // Filtro por categoria (funciona com array-contains)
+  if (category) constraints.push(where("categories", "array-contains", category));
 
-  // 🔸 Filtra por cidade
+  // Filtro por cidade
   if (city) constraints.push(where("city", "==", city));
 
-  // 🔸 Filtra por preço
-  if (price) {
-    let priceValue = price;
-    if (typeof price === "string") {
-      priceValue = price.startsWith("$") ? price.length : Number(price);
-    }
-    const numericPrice = Number(priceValue);
-    if (Number.isFinite(numericPrice)) {
-      constraints.push(where("price", "==", numericPrice));
-    } else {
-      console.warn("Ignoring invalid price filter:", price);
-    }
+  // 🔹 Corrigido: ignora preço se o campo não existir
+  if (price && !isNaN(Number(price))) {
+    constraints.push(where("price", "==", Number(price)));
   }
 
-  // 🔸 Ordenação dinâmica: por review_count ou avgRating/stars
+  // 🔹 Ordenação
   const sortField =
     sort?.toLowerCase() === "review" ? "review_count" : "stars";
   constraints.push(orderBy(sortField, "desc"));
 
+  console.log("📡 Firestore query filters =>", { category, city, price, sort, sortField });
   return query(baseRef, ...constraints);
 }
+
 
 // 🔹 Retorna lista única (promessa)
 export async function getRestaurants(possibleDbOrFilters = {}, maybeFilters) {

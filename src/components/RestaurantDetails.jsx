@@ -2,7 +2,7 @@
 
 import React from "react";
 import renderStars from "@/src/components/Stars.jsx";
-import { resolveRestaurantPhoto } from "@/src/lib/restaurants/placeholders";
+import { DEFAULT_RESTAURANT_IMAGE } from "@/src/lib/restaurants/placeholder";
 
 const RestaurantDetails = ({
   restaurant,
@@ -13,7 +13,7 @@ const RestaurantDetails = ({
   children,
 }) => {
   const details = restaurant ?? {};
-  const imageSrc = resolveRestaurantPhoto(details);
+  const imageSrc = details.photo ?? DEFAULT_RESTAURANT_IMAGE;
   const name = details.name ?? "Restaurant";
   const category = details.category ?? "";
   const city = details.city ?? "";

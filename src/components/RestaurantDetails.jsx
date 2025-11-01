@@ -2,6 +2,7 @@
 
 import React from "react";
 import renderStars from "@/src/components/Stars.jsx";
+import { resolveRestaurantPhoto } from "@/src/lib/restaurants/placeholders";
 
 const RestaurantDetails = ({
   restaurant,
@@ -11,9 +12,22 @@ const RestaurantDetails = ({
   isOpen,
   children,
 }) => {
+  const details = restaurant ?? {};
+  const imageSrc = resolveRestaurantPhoto(details);
+  const name = details.name ?? "Restaurant";
+  const category = details.category ?? "";
+  const city = details.city ?? "";
+  const rating = Number(details.avgRating ?? details.stars ?? 0);
+  const reviewCount = Number(details.numRatings ?? details.review_count ?? 0);
+  const priceLevelRaw =
+    typeof details.price === "number"
+      ? details.price
+      : Number.parseInt(details.price, 10);
+  const priceLevel = Number.isFinite(priceLevelRaw) && priceLevelRaw > 0 ? priceLevelRaw : 0;
+
   return (
     <section className="img__section">
-      <img src={restaurant.photo} alt={restaurant.name} />
+      <img src={imageSrc} alt={name} />
 
       <div className="actions">
         {userId && (
@@ -44,18 +58,17 @@ const RestaurantDetails = ({
 
       <div className="details__container">
         <div className="details">
-          <h2>{restaurant.name}</h2>
+          <h2>{name}</h2>
 
           <div className="restaurant__rating">
-            <ul>{renderStars(restaurant.avgRating)}</ul>
-
-            <span>({restaurant.numRatings})</span>
+            <ul>{renderStars(rating)}</ul>
+            <span>({reviewCount})</span>
           </div>
 
           <p>
-            {restaurant.category} | {restaurant.city}
+            {category} | {city}
           </p>
-          <p>{"$".repeat(restaurant.price)}</p>
+          <p>{"$".repeat(priceLevel)}</p>
           {children}
         </div>
       </div>

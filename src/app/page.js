@@ -2,6 +2,7 @@ import RestaurantListings from "@/src/components/RestaurantListings.jsx";
 import { getRestaurants } from "@/src/lib/firebase/firestore.js";
 import { getAuthenticatedAppForUser } from "@/src/lib/firebase/serverApp.js";
 import { getFirestore } from "firebase/firestore";
+import { ensureRestaurantPhotos } from "@/src/lib/server/restaurantImages";
 
 // Force next.js to treat this route as server-side rendered
 // Without this line, during the build process, next.js will treat this route as static and build a static HTML file for it
@@ -16,14 +17,15 @@ export default async function Home(props) {
   // Using seachParams which Next.js provides, allows the filtering to happen on the server-side, for example:
   // ?city=London&category=Indian&sort=Review
   const { firebaseServerApp } = await getAuthenticatedAppForUser();
-  const restaurants = await getRestaurants(
-    getFirestore(firebaseServerApp),
-    searchParams
+  const firestore = getFirestore(firebaseServerApp);
+  const restaurantsWithImages = await ensureRestaurantPhotos(
+    await getRestaurants(firestore, searchParams),
+    firestore
   );
   return (
     <main className="main__home">
       <RestaurantListings
-        initialRestaurants={restaurants}
+        initialRestaurants={restaurantsWithImages}
         searchParams={searchParams}
       />
     </main>

@@ -9,8 +9,6 @@ export async function updateRestaurantImage(restaurantId, image) {
     throw new Error("A restaurantId and image file are required");
   }
 
-async function uploadImage(restaurantId, image) {}
-// Replace the two functions above
   const publicImageUrl = await uploadImage(restaurantId, image);
   await updateRestaurantImageReference(restaurantId, publicImageUrl);
   return publicImageUrl;

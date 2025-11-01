@@ -182,30 +182,27 @@ export function getRestaurantsSnapshot(cbOrFirestore, maybeCallback, maybeFilter
 }
 
 
-// 🔹 Busca restaurante por ID
-export async function getRestaurantById(restaurantId) {
+export async function getRestaurantById(
+  possibleDbOrRestaurantId,
+  maybeRestaurantId
+) {
+  const hasExplicitDb = isFirestoreInstance(possibleDbOrRestaurantId);
+  const database = resolveFirestoreInstance(
+    hasExplicitDb ? possibleDbOrRestaurantId : undefined
+  );
+
+  const restaurantId = hasExplicitDb
+    ? maybeRestaurantId
+    : possibleDbOrRestaurantId;
+
   if (!restaurantId) return null;
   const docRef = doc(db, "restaurants", restaurantId);
+
+  const docRef = doc(database, "restaurants", restaurantId);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) return null;
   return normalizeRestaurantSnapshot(docSnap);
 }
-
-// 🔹 Escuta restaurante por ID
-export function getRestaurantSnapshotById(restaurantId, cb) {
-  if (!restaurantId) return;
-  const docRef = doc(db, "restaurants", restaurantId);
-
-  return onSnapshot(docRef, (docSnapshot) => {
-    const data = docSnapshot.data();
-    if (!data) {
-      cb(undefined);
-      return;
-    }
-    cb(normalizeRestaurantSnapshot(docSnapshot));
-  });
-}
-
 // 🔹 Normaliza snapshot do Firestore
 function normalizeRestaurantSnapshot(docSnapshot) {
   const data = docSnapshot.data();

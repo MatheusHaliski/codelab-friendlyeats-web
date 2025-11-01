@@ -13,6 +13,7 @@ import {
   GeminiSummarySkeleton,
 } from "@/src/components/Reviews/ReviewSummary";
 import { getFirestore } from "firebase/firestore";
+import { ensureRestaurantPhoto } from "@/src/lib/server/restaurantImages";
 
 export default async function Home(props) {
   // This is a server component, we can access URL
@@ -24,6 +25,10 @@ export default async function Home(props) {
   const restaurant = await getRestaurantById(
     getFirestore(firebaseServerApp),
     params.id
+  const firestore = getFirestore(firebaseServerApp);
+  const restaurant = await ensureRestaurantPhoto(
+    await getRestaurantById(firestore, params.id),
+    firestore
   );
 
   return (
@@ -39,6 +44,7 @@ export default async function Home(props) {
       </Restaurant>
       <Suspense
         fallback={<ReviewsListSkeleton numReviews={restaurant.numRatings} />}
+        fallback={<ReviewsListSkeleton numReviews={restaurant?.numRatings} />}
       >
         <ReviewsList restaurantId={params.id} userId={currentUser?.uid || ""} />
       </Suspense>

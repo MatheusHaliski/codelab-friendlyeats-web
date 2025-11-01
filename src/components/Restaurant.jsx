@@ -3,17 +3,13 @@
 // This components shows one individual restaurant
 // It receives data from src/app/restaurant/[id]/page.jsx
 
-import { React, useState, useEffect, Suspense } from "react";
-import { React, useState, useEffect, useMemo, Suspense } from "react";
+
 import dynamic from "next/dynamic";
 import { getRestaurantSnapshotById } from "@/src/lib/firebase/firestore.js";
 import { useUser } from "@/src/lib/getUser";
 import RestaurantDetails from "@/src/components/RestaurantDetails.jsx";
 import { updateRestaurantImage } from "@/src/lib/firebase/storage.js";
-import {
-  mergeRestaurantPhoto,
-  resolveRestaurantPhoto,
-} from "@/src/lib/restaurants/placeholders";
+import { mergeRestaurantPhoto, resolveRestaurantPhoto } from "@/src/lib/restaurants/placeholder";
 
 const ReviewDialog = dynamic(() => import("@/src/components/ReviewDialog.jsx"));
 
@@ -23,7 +19,6 @@ export default function Restaurant({
   initialUserId,
   children,
 }) {
-  const [restaurantDetails, setRestaurantDetails] = useState(initialRestaurant);
   const [restaurantDetails, setRestaurantDetails] = useState(() =>
     initialRestaurant
       ? mergeRestaurantPhoto(initialRestaurant)
@@ -49,7 +44,6 @@ export default function Restaurant({
     }
 
     const imageURL = await updateRestaurantImage(id, image);
-    setRestaurantDetails({ ...restaurantDetails, photo: imageURL });
     setRestaurantDetails((current = {}) => ({
       ...current,
       photo: imageURL,
@@ -71,7 +65,6 @@ export default function Restaurant({
 
   useEffect(() => {
     return getRestaurantSnapshotById(id, (data) => {
-      setRestaurantDetails(data);
       if (!data) {
         setRestaurantDetails(undefined);
         return;
@@ -95,7 +88,6 @@ export default function Restaurant({
   return (
     <>
       <RestaurantDetails
-        restaurant={restaurantDetails}
         restaurant={normalizedRestaurantDetails}
         userId={userId}
         handleRestaurantImage={handleRestaurantImage}

@@ -195,12 +195,11 @@ export async function getRestaurantById(
     ? maybeRestaurantId
     : possibleDbOrRestaurantId;
 
-  if (!restaurantId) return null;
-  const docRef = doc(db, "restaurants", restaurantId);
+ if (!restaurantId) return null;
+const docRef = doc(database, "restaurants", restaurantId);
+const docSnap = await getDoc(docRef);
+if (!docSnap.exists()) return null;
 
-  const docRef = doc(database, "restaurants", restaurantId);
-  const docSnap = await getDoc(docRef);
-  if (!docSnap.exists()) return null;
   return normalizeRestaurantSnapshot(docSnap);
 }
 // 🔹 Normaliza snapshot do Firestore

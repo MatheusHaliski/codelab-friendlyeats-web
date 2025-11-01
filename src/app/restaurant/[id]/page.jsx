@@ -22,9 +22,6 @@ export default async function Home(props) {
   const params = await props.params;
   const { currentUser } = await getUser();
   const { firebaseServerApp } = await getAuthenticatedAppForUser();
-  const restaurant = await getRestaurantById(
-    getFirestore(firebaseServerApp),
-    params.id
   const firestore = getFirestore(firebaseServerApp);
   const restaurant = await ensureRestaurantPhoto(
     await getRestaurantById(firestore, params.id),
@@ -43,7 +40,6 @@ export default async function Home(props) {
         </Suspense>
       </Restaurant>
       <Suspense
-        fallback={<ReviewsListSkeleton numReviews={restaurant.numRatings} />}
         fallback={<ReviewsListSkeleton numReviews={restaurant?.numRatings} />}
       >
         <ReviewsList restaurantId={params.id} userId={currentUser?.uid || ""} />

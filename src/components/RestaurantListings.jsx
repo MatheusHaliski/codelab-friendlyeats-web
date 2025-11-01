@@ -1,33 +1,44 @@
 "use client";
 
+/* global Map, Set */
+
 import Link from "next/link";
 import { React, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import renderStars from "@/src/components/Stars.jsx";
 import { getRestaurantsSnapshot } from "@/src/lib/firebase/firestore.js";
 import Filters from "@/src/components/Filters.jsx";
+import {
+  mergeRestaurantPhoto,
+  resolveRestaurantPhoto,
+} from "@/src/lib/restaurants/placeholders";
 
-const RestaurantItem = ({ restaurant }) => (
-  <li key={restaurant.id}>
-    <Link href={`/restaurant/${restaurant.id}`}>
-      <div>
-        <div className="image-cover">
-          <img src={restaurant.photo} alt={restaurant.name} />
-        </div>
-        <div className="restaurant__details">
-          <h2>{restaurant.name}</h2>
-          <div className="restaurant__rating">
-            <ul>{renderStars(restaurant.avgRating)}</ul>
-            <span>({restaurant.numRatings})</span>
+const RestaurantItem = ({ restaurant }) => {
+  const imageSrc = resolveRestaurantPhoto(restaurant);
+  const name = restaurant?.name ?? "Restaurant";
+
+  return (
+    <li key={restaurant.id}>
+      <Link href={`/restaurant/${restaurant.id}`}>
+        <div>
+          <div className="image-cover">
+            <img src={imageSrc} alt={name} />
+          </div>
+          <div className="restaurant__details">
+            <h2>{name}</h2>
+            <div className="restaurant__rating">
+              <ul>{renderStars(restaurant.avgRating)}</ul>
+              <span>({restaurant.numRatings})</span>
+            </div>
           </div>
           <p>
             {restaurant.category} | {restaurant.city}, {restaurant.country}
           </p>
         </div>
-      </div>
-    </Link>
-  </li>
-);
+      </Link>
+    </li>
+  );
+};
 
 // -------------------------------
 // Geração dinâmica de filtros
@@ -71,13 +82,17 @@ const keywords_others = [
       }
     }
   });
-const allCategories = Array.from(categories).sort();
-const foodCategories = allCategories.filter(cat =>
-  keywords_food.some(keyword => cat.toLowerCase().includes(keyword.toLowerCase()))
-);
-const otherCategories = allCategories.filter(cat =>
-  keywords_others.some(keyword => cat.toLowerCase().includes(keyword.toLowerCase()))
-);
+  const allCategories = Array.from(categories).sort();
+  const foodCategories = allCategories.filter((cat) =>
+    keywords_food.some((keyword) =>
+      cat.toLowerCase().includes(keyword.toLowerCase())
+    )
+  );
+  const otherCategories = allCategories.filter((cat) =>
+    keywords_others.some((keyword) =>
+      cat.toLowerCase().includes(keyword.toLowerCase())
+    )
+  );
   return {
     foodCategories,
     otherCategories,
@@ -92,20 +107,33 @@ const otherCategories = allCategories.filter(cat =>
 export default function RestaurantListings({ initialRestaurants, searchParams }) {
   const router = useRouter();
 
-const initialFilters = {
-  mainType: searchParams.mainType || "",
-  category: searchParams.category || "",
-  country: searchParams.country || "",
-  city: searchParams.city || "",
-  sort: searchParams.sort || "rating",
-};
+  const initialFilters = {
+    mainType: searchParams.mainType || "",
+    category: searchParams.category || "",
+    country: searchParams.country || "",
+    city: searchParams.city || "",
+    sort: searchParams.sort || "rating",
+  };
 
+  const initialRestaurantsWithPhotos = useMemo(
+    () =>
+      (initialRestaurants || []).map((restaurant) =>
+        mergeRestaurantPhoto(restaurant)
+      ),
+    [initialRestaurants]
+  );
 
-  const [restaurants, setRestaurants] = useState(initialRestaurants);
+  const [restaurants, setRestaurants] = useState(
+    initialRestaurantsWithPhotos
+  );
   const [filters, setFilters] = useState(initialFilters);
   const [availableFilters, setAvailableFilters] = useState(() =>
     deriveAvailableFilters(initialRestaurants)
   );
+
+  useEffect(() => {
+    setRestaurants(initialRestaurantsWithPhotos);
+  }, [initialRestaurantsWithPhotos]);
 
   // Atualiza URL ao alterar filtros
   useEffect(() => {
@@ -114,11 +142,21 @@ const initialFilters = {
       if (value) params.append(key, value);
     }
     router.push(`?${params.toString()}`);
-  }, [filters]);
+  }, [filters, router]);
 
   // Atualiza lista de restaurantes em tempo real
   useEffect(() => {
-    return getRestaurantsSnapshot((data) => setRestaurants(data), filters);
+    return getRestaurantsSnapshot((data) => {
+      setRestaurants((previousRestaurants = []) => {
+        const previousPhotos = new Map(
+          previousRestaurants.map((restaurant) => [restaurant.id, restaurant.photo])
+        );
+
+        return data.map((restaurant) =>
+          mergeRestaurantPhoto(restaurant, previousPhotos.get(restaurant.id))
+        );
+      });
+    }, filters);
   }, [filters]);
 
   // Atualiza lista de filtros disponíveis conforme dados
@@ -126,7 +164,8 @@ const initialFilters = {
     setAvailableFilters(deriveAvailableFilters(restaurants));
   }, [restaurants]);
 
-  const categoryOptions = ["", ...availableFilters.categories];
+  const foodOptions = availableFilters?.foodCategories || [""];
+  const otherOptions = availableFilters?.otherCategories || [""];
   const countryOptions = ["", ...availableFilters.countries];
   const cityOptions =
     filters.country && availableFilters.citiesByCountry[filters.country]
@@ -135,21 +174,14 @@ const initialFilters = {
 
   return (
     <article>
-<Filters
-  filters={filters}
-  setFilters={setFilters}
-  foodOptions={availableFilters?.foodCategories || [""]}
-  otherOptions={availableFilters?.otherCategories || [""]}
-  countryOptions={availableFilters?.countries || [""]}
-  cityOptions={
-    filters.country && availableFilters?.citiesByCountry?.[filters.country]
-      ? ["", ...availableFilters.citiesByCountry[filters.country]]
-      : [""]
-  }
-/>
-
-
-
+      <Filters
+        filters={filters}
+        setFilters={setFilters}
+        foodOptions={foodOptions}
+        otherOptions={otherOptions}
+        countryOptions={countryOptions}
+        cityOptions={cityOptions}
+      />
 
       <ul className="restaurants">
         {restaurants
@@ -175,4 +207,3 @@ const initialFilters = {
       </ul>
     </article>
   );
-}

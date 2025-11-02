@@ -206,6 +206,8 @@ if (!docSnap.exists()) return null;
 function normalizeRestaurantSnapshot(docSnapshot) {
   const data = docSnapshot.data();
   const timestamp = data.timestamp?.toDate ? data.timestamp.toDate() : null;
+  const hasPhotoField = Object.prototype.hasOwnProperty.call(data, "photo");
+  const normalizedPhoto = hasPhotoField ? data.photo ?? null : null;
 
   const categories = Array.isArray(data.categories)
     ? data.categories
@@ -231,6 +233,7 @@ function normalizeRestaurantSnapshot(docSnapshot) {
     avgRating: averageRating,
     price,
     timestamp,
+    photo: normalizedPhoto,
   };
 }
 

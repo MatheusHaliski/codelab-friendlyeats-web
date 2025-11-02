@@ -1,6 +1,4 @@
 
-import fetch from "node-fetch";
-
 export async function fetchRestaurantImage(query) {
   const apiKey = process.env.GOOGLE_CSE_API_KEY;
   const searchEngineId = process.env.GOOGLE_CSE_SEARCH_ENGINE_ID;

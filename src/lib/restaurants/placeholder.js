@@ -29,11 +29,21 @@ export function resolveRestaurantPhoto(restaurant, fallback) {
 
   for (const candidate of candidates) {
     const resolved = coercePhoto(candidate);
-    if (resolved) {
-      return resolved;
+    if (!resolved) {
+      continue;
     }
-  }
+    // Skip any previously stored fallback URLs so the resolver keeps looking
+    // for a real image.
+    if (resolved === FALLBACK_IMAGE_PATH) {
+      continue;
+    }
 
+    if (fallbackToUse && resolved === fallbackToUse) {
+      continue;
+    }
+
+    return resolved;
+  }
   return fallbackToUse;
 }
 

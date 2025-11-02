@@ -17,6 +17,9 @@ export function resolveRestaurantPhoto(restaurant, fallback) {
     return fallbackToUse;
   }
 
+  // Only include fields that are expected to contain usable image URLs. Adding
+  // non-image properties (like the restaurant name) would break image
+  // resolution, so keep this list limited to known photo keys.
   const candidates = [
     restaurant.photo,
     restaurant.photoUrl,
@@ -29,9 +32,21 @@ export function resolveRestaurantPhoto(restaurant, fallback) {
 
   for (const candidate of candidates) {
     const resolved = coercePhoto(candidate);
-    if (resolved) {
-      return resolved;
+    if (!resolved) {
+      continue;
     }
+
+    // Skip any previously stored fallback URLs so the resolver keeps looking
+    // for a real image.
+    if (resolved === FALLBACK_IMAGE_PATH) {
+      continue;
+    }
+
+    if (fallbackToUse && resolved === fallbackToUse) {
+      continue;
+    }
+
+    return resolved;
   }
 
   return fallbackToUse;
@@ -57,5 +72,3 @@ export function mergeRestaurantPhoto(restaurant, previousPhoto, fallback) {
 
   return { ...restaurant, photo: fallbackToUse };
 }
-
-export const DEFAULT_RESTAURANT_IMAGE = FALLBACK_IMAGE_PATH;

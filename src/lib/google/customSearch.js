@@ -1,69 +1,30 @@
-import "server-only";
 
-const API_ENDPOINT = "https://www.googleapis.com/customsearch/v1";
-const API_KEY = process.env.GOOGLE_CSE_API_KEY;
-const SEARCH_ENGINE_ID = process.env.GOOGLE_CSE_SEARCH_ENGINE_ID;
+import fetch from "node-fetch";
 
-function buildQueryParams(query, options = {}) {
-  const params = new URLSearchParams({
-    key: API_KEY ?? "",
-    cx: SEARCH_ENGINE_ID ?? "",
-    searchType: "image",
-    num: "3",
-    safe: "active",
-    q: query,
-  });
+export async function fetchRestaurantImage(query) {
+  const apiKey = process.env.GOOGLE_CSE_API_KEY;
+  const searchEngineId = process.env.GOOGLE_CSE_SEARCH_ENGINE_ID;
 
-  if (options.language) {
-    params.set("lr", options.language);
-  }
-
-  if (options.country) {
-    params.set("cr", options.country);
-  }
-
-  return params;
-}
-
-export function isCustomSearchConfigured() {
-  return Boolean(API_KEY && SEARCH_ENGINE_ID);
-}
-
-export async function searchImageForRestaurant(query, options = {}) {
-  if (!query || !isCustomSearchConfigured()) {
+  if (!apiKey || !searchEngineId) {
+    console.warn("⚠️ Google CSE not configured, returning null image.");
     return null;
   }
+
+  const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(
+    query
+  )}&cx=${searchEngineId}&key=${apiKey}&searchType=image&num=1`;
 
   try {
-    const params = buildQueryParams(query, options);
-    const response = await fetch(`${API_ENDPOINT}?${params.toString()}`, {
-      method: "GET",
-      cache: "no-store",
-      next: { revalidate: 0 },
-    });
+    const res = await fetch(url);
+    const data = await res.json();
 
-    if (!response.ok) {
-      console.error(
-        "Custom Search API request failed",
-        response.status,
-        response.statusText
-      );
-      return null;
+    if (data?.items?.length > 0) {
+      return data.items[0].link;
     }
 
-    const payload = await response.json();
-    if (!Array.isArray(payload.items) || payload.items.length === 0) {
-      return null;
-    }
-
-    const imageResult = payload.items.find((item) =>
-      item?.mime?.startsWith("image/")
-    );
-
-    return imageResult?.link ?? payload.items[0]?.link ?? null;
-  } catch (error) {
-    console.error("Unable to fetch image from Custom Search API", error);
+    return null;
+  } catch (err) {
+    console.error("❌ Error fetching image:", err);
     return null;
   }
 }
-

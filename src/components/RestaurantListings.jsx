@@ -21,7 +21,7 @@ const RestaurantItem = ({ restaurant }) => {
   const fallbackAlt =
     "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
   const fallbackAltF =
-    "fallbackfood.png";
+    "/fallbackfood.png";
   const name = restaurant?.name ?? "Restaurant";
 
   return (

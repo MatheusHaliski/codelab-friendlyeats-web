@@ -1,14 +1,17 @@
 // src/lib/server/restaurantImages.js
 import { fetchRestaurantImage } from "@/src/lib/google/customSearch";
+import { resolveRestaurantPhoto } from "@/src/lib/restaurants/placeholder";
 import { updateDoc, doc } from "firebase/firestore";
 
 export async function ensureRestaurantPhotos(restaurants, firestore) {
   const updated = [];
 
   for (const restaurant of restaurants) {
-    // Se já tem imagem, ignora
-    if (restaurant.photo || restaurant.image) {
-      updated.push(restaurant);
+  const existingPhoto = resolveRestaurantPhoto(restaurant, null);
+
+    if (existingPhoto) {
+      // Normalise the photo field so downstream consumers have a predictable key.
+      updated.push({ ...restaurant, photo: existingPhoto });
       continue;
     }
 

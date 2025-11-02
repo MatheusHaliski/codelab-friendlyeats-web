@@ -13,6 +13,9 @@ import {
   resolveRestaurantPhoto,
 } from "@/src/lib/restaurants/placeholders";
 
+// -------------------------------
+// Item individual de restaurante
+// -------------------------------
 const RestaurantItem = ({ restaurant }) => {
   const imageSrc = resolveRestaurantPhoto(restaurant);
   const name = restaurant?.name ?? "Restaurant";
@@ -24,6 +27,7 @@ const RestaurantItem = ({ restaurant }) => {
           <div className="image-cover">
             <img src={imageSrc} alt={name} />
           </div>
+
           <div className="restaurant__details">
             <h2>{name}</h2>
             <div className="restaurant__rating">
@@ -31,6 +35,7 @@ const RestaurantItem = ({ restaurant }) => {
               <span>({restaurant.numRatings})</span>
             </div>
           </div>
+
           <p>
             {restaurant.category} | {restaurant.city}, {restaurant.country}
           </p>
@@ -45,19 +50,19 @@ const RestaurantItem = ({ restaurant }) => {
 // -------------------------------
 function deriveAvailableFilters(restaurants = []) {
   const keywords_food = [
-  "Food", "Restaurant", "Pizza", "Coffee", "Tea", "Bars", "Burgers", "Breakfast", "Brunch",
-  "Italian", "Chinese", "Japanese", "Mexican", "Indian", "Mediterranean", "Caribbean",
-  "Cajun", "German", "Russian", "Cuban", "Organic", "Tapas", "Bowls", "Sushi", "Fast Food",
-  "Sandwiches", "Salad", "Vegan", "Vegetarian", "Desserts", "Juice", "Smoothies", "Cafes",
-  "Diners", "Seafood", "Steakhouse", "Poke", "Buffets", "Ramen", "Greek", "Korean"
-];
+    "Food", "Restaurant", "Pizza", "Coffee", "Tea", "Bars", "Burgers", "Breakfast", "Brunch",
+    "Italian", "Chinese", "Japanese", "Mexican", "Indian", "Mediterranean", "Caribbean",
+    "Cajun", "German", "Russian", "Cuban", "Organic", "Tapas", "Bowls", "Sushi", "Fast Food",
+    "Sandwiches", "Salad", "Vegan", "Vegetarian", "Desserts", "Juice", "Smoothies", "Cafes",
+    "Diners", "Seafood", "Steakhouse", "Poke", "Buffets", "Ramen", "Greek", "Korean"
+  ];
 
-const keywords_others = [
-  "Home", "Technology", "Accessories", "Arcades", "Art", "Business", "Consulting",
-  "Club", "School", "Tree", "Work", "House", "Drug", "Medical", "Assistant", "Education",
-  "Health", "Cleaning", "Entertainment", "Spa", "Travel", "Bank", "Hotel", "Market",
-  "Shop", "Car", "Service", "Pet", "Doctor", "Museum", "Park"
-];
+  const keywords_others = [
+    "Home", "Technology", "Accessories", "Arcades", "Art", "Business", "Consulting",
+    "Club", "School", "Tree", "Work", "House", "Drug", "Medical", "Assistant", "Education",
+    "Health", "Cleaning", "Entertainment", "Spa", "Travel", "Bank", "Hotel", "Market",
+    "Shop", "Car", "Service", "Pet", "Doctor", "Museum", "Park"
+  ];
 
   const categories = new Set();
   const citiesByCountry = {};
@@ -72,16 +77,15 @@ const keywords_others = [
 
     if (restaurant.country) {
       countries.add(restaurant.country);
-
       if (!citiesByCountry[restaurant.country]) {
         citiesByCountry[restaurant.country] = new Set();
       }
-
       if (restaurant.city) {
         citiesByCountry[restaurant.country].add(restaurant.city);
       }
     }
   });
+
   const allCategories = Array.from(categories).sort();
   const foodCategories = allCategories.filter((cat) =>
     keywords_food.some((keyword) =>
@@ -93,10 +97,11 @@ const keywords_others = [
       cat.toLowerCase().includes(keyword.toLowerCase())
     )
   );
+
   return {
     foodCategories,
     otherCategories,
-    categories: Array.from(categories).sort(),
+    categories: allCategories,
     countries: Array.from(countries).sort(),
     citiesByCountry: Object.fromEntries(
       Object.entries(citiesByCountry).map(([k, v]) => [k, Array.from(v).sort()])
@@ -104,6 +109,9 @@ const keywords_others = [
   };
 }
 
+// -------------------------------
+// Componente principal
+// -------------------------------
 export default function RestaurantListings({ initialRestaurants, searchParams }) {
   const router = useRouter();
 
@@ -123,14 +131,13 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
     [initialRestaurants]
   );
 
-  const [restaurants, setRestaurants] = useState(
-    initialRestaurantsWithPhotos
-  );
+  const [restaurants, setRestaurants] = useState(initialRestaurantsWithPhotos);
   const [filters, setFilters] = useState(initialFilters);
   const [availableFilters, setAvailableFilters] = useState(() =>
     deriveAvailableFilters(initialRestaurants)
   );
 
+  // Atualiza lista inicial com fotos
   useEffect(() => {
     setRestaurants(initialRestaurantsWithPhotos);
   }, [initialRestaurantsWithPhotos]);
@@ -205,8 +212,6 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
             <RestaurantItem key={restaurant.id} restaurant={restaurant} />
           ))}
       </ul>
-        </article>
+    </article>
   );
 }
-export default RestaurantListings;
-  );

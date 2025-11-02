@@ -1,4 +1,4 @@
-const FALLBACK_IMAGE_PATH = "/food.svg";
+const FALLBACK_IMAGE_PATH = "/fallbackfood.png";
 
 function coercePhoto(candidate) {
   if (typeof candidate !== "string") {

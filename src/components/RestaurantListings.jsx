@@ -29,7 +29,15 @@ const RestaurantItem = ({ restaurant }) => {
       <Link href={`/restaurant/${restaurant.id}`}>
         <div>
           <div className="image-cover">
-            <img src={imageSrc} alt={name} />
+           <img
+            src={imageSrc}
+            alt={name}
+            onError={(e) => {
+            e.target.onerror = null; // evita loop infinito
+            e.target.src = "/fallbackfood.png"; // imagem genérica
+          }}
+        />
+
           </div>
 
           <div className="restaurant__details">

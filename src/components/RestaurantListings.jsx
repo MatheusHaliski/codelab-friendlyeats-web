@@ -205,5 +205,8 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
             <RestaurantItem key={restaurant.id} restaurant={restaurant} />
           ))}
       </ul>
-    </article>
+        </article>
+  );
+}
+export default RestaurantListings;
   );

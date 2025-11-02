@@ -29,7 +29,7 @@ const RestaurantItem = ({ restaurant }) => {
       <Link href={`/restaurant/${restaurant.id}`}>
         <div>
           <div className="image-cover">
-            <img src={imageSrc} alt={fallbackAltF} />
+            <img src={fallbackAltF} alt={fallbackAltF} />
           </div>
 
           <div className="restaurant__details">

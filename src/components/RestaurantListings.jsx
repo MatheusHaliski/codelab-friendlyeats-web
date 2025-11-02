@@ -18,6 +18,8 @@ import {
 // -------------------------------
 const RestaurantItem = ({ restaurant }) => {
   const imageSrc = resolveRestaurantPhoto(restaurant);
+  const fallbackAlt =
+    "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
   const name = restaurant?.name ?? "Restaurant";
 
   return (
@@ -25,7 +27,7 @@ const RestaurantItem = ({ restaurant }) => {
       <Link href={`/restaurant/${restaurant.id}`}>
         <div>
           <div className="image-cover">
-            <img src={imageSrc} alt={name} />
+            <img src={imageSrc} alt={fallbackAlt} />
           </div>
 
           <div className="restaurant__details">

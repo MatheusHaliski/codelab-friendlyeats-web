@@ -1,12 +1,25 @@
-const FALLBACK_IMAGE_PATH = "/fallbackfood.png";
+const FALLBACK_IMAGE_PATH =
+  "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
 
 function coercePhoto(candidate) {
-  if (typeof candidate !== "string") {
-    return null;
-  }
-
+  if (typeof candidate !== "string") return null;
   const trimmed = candidate.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+// 🔍 Detecta se a URL é de CAPTCHA/bloqueio
+function isCaptchaOrBlocked(url) {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+
+  return (
+    lower.includes("lookaside.fbsbx.com") ||
+    lower.includes("facebook.com") ||
+    lower.includes("tripadvisor") ||
+    lower.includes("yelp") ||
+    lower.includes("captcha") ||
+    lower.includes("googleusercontent.com")
+  );
 }
 
 export function resolveRestaurantPhoto(restaurant, fallback) {
@@ -17,9 +30,7 @@ export function resolveRestaurantPhoto(restaurant, fallback) {
     return fallbackToUse;
   }
 
-  // Only include fields that are expected to contain usable image URLs. Adding
-  // non-image properties (like the restaurant name) would break image
-  // resolution, so keep this list limited to known photo keys.
+  // 🔹 Lista de possíveis campos com URLs de imagem
   const candidates = [
     restaurant.photo,
     restaurant.photoUrl,
@@ -32,23 +43,22 @@ export function resolveRestaurantPhoto(restaurant, fallback) {
 
   for (const candidate of candidates) {
     const resolved = coercePhoto(candidate);
-    if (!resolved) {
-      continue;
+    if (!resolved) continue;
+
+    // Ignora fallbacks já armazenados
+    if (resolved === FALLBACK_IMAGE_PATH) continue;
+    if (fallbackToUse && resolved === fallbackToUse) continue;
+
+    // 🚫 Se detectar CAPTCHA ou domínio bloqueado → usa fallback
+    if (isCaptchaOrBlocked(resolved)) {
+      return FALLBACK_IMAGE_PATH;
     }
 
-    // Skip any previously stored fallback URLs so the resolver keeps looking
-    // for a real image.
-    if (resolved === FALLBACK_IMAGE_PATH) {
-      continue;
-    }
-
-    if (fallbackToUse && resolved === fallbackToUse) {
-      continue;
-    }
-
+    // ✅ Retorna imagem válida
     return resolved;
   }
 
+  // 🔁 Se nenhuma imagem válida encontrada, retorna fallback padrão
   return fallbackToUse;
 }
 

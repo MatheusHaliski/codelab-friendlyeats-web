@@ -1,17 +1,23 @@
+import fetch from "node-fetch";
+
 const FALLBACK_IMAGE_PATH =
   "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
 
+// ========================================================
+// 🔍 Função auxiliar: valida formato e remove espaços
+// ========================================================
 function coercePhoto(candidate) {
   if (typeof candidate !== "string") return null;
   const trimmed = candidate.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
 
-// 🔍 Detecta se a URL é de CAPTCHA/bloqueio
+// ========================================================
+// ⚠️ Detecta URLs conhecidas de CAPTCHA/bloqueio
+// ========================================================
 function isCaptchaOrBlocked(url) {
   if (!url) return false;
   const lower = url.toLowerCase();
-
   return (
     lower.includes("lookaside.fbsbx.com") ||
     lower.includes("facebook.com") ||
@@ -22,7 +28,25 @@ function isCaptchaOrBlocked(url) {
   );
 }
 
-export function resolveRestaurantPhoto(restaurant, fallback) {
+// ========================================================
+// 🌐 Verifica o status HTTP da imagem (HEAD request)
+// ========================================================
+async function isHttpError(url) {
+  if (!url) return true;
+
+  try {
+    const res = await fetch(url, { method: "HEAD", timeout: 4000 });
+    // Se retornar 4xx, 5xx → imagem inválida
+    return res.status >= 400;
+  } catch (err) {
+    return true; // qualquer erro de rede também é inválido
+  }
+}
+
+// ========================================================
+// 🖼️ Resolve a imagem do restaurante
+// ========================================================
+export async function resolveRestaurantPhoto(restaurant, fallback) {
   const fallbackToUse =
     fallback === undefined ? FALLBACK_IMAGE_PATH : fallback ?? null;
 
@@ -30,7 +54,6 @@ export function resolveRestaurantPhoto(restaurant, fallback) {
     return fallbackToUse;
   }
 
-  // 🔹 Lista de possíveis campos com URLs de imagem
   const candidates = [
     restaurant.photo,
     restaurant.photoUrl,
@@ -49,20 +72,30 @@ export function resolveRestaurantPhoto(restaurant, fallback) {
     if (resolved === FALLBACK_IMAGE_PATH) continue;
     if (fallbackToUse && resolved === fallbackToUse) continue;
 
-    // 🚫 Se detectar CAPTCHA ou domínio bloqueado → usa fallback
+    // 🚫 CAPTCHA ou fontes bloqueadas → usa fallback
     if (isCaptchaOrBlocked(resolved)) {
       return FALLBACK_IMAGE_PATH;
     }
 
-    // ✅ Retorna imagem válida
+    // 🌐 Testa a imagem (HEAD)
+    const hasHttpError = await isHttpError(resolved);
+    if (hasHttpError) {
+      console.warn(`⚠️ Erro HTTP detectado para imagem: ${resolved}`);
+      return FALLBACK_IMAGE_PATH;
+    }
+
+    // ✅ Se passou por tudo, imagem válida
     return resolved;
   }
 
-  // 🔁 Se nenhuma imagem válida encontrada, retorna fallback padrão
+  // 🔁 Nenhuma imagem válida encontrada
   return fallbackToUse;
 }
 
-export function mergeRestaurantPhoto(restaurant, previousPhoto, fallback) {
+// ========================================================
+// 🧩 Merge padrão com foto preservada/fallback
+// ========================================================
+export async function mergeRestaurantPhoto(restaurant, previousPhoto, fallback) {
   const fallbackToUse =
     fallback === undefined ? FALLBACK_IMAGE_PATH : fallback ?? null;
 
@@ -70,7 +103,7 @@ export function mergeRestaurantPhoto(restaurant, previousPhoto, fallback) {
     return restaurant;
   }
 
-  const explicitPhoto = resolveRestaurantPhoto(restaurant, null);
+  const explicitPhoto = await resolveRestaurantPhoto(restaurant, null);
   if (explicitPhoto) {
     return { ...restaurant, photo: explicitPhoto };
   }

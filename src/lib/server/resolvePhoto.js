@@ -31,8 +31,8 @@ async function isBad(url) {
   }
 }
 
-export async function resolveRestaurantPhoto(restaurant, fallback = FALLBACK_IMAGE) {
-  if (!restaurant) return fallback;
+export async function resolveRestaurantPhotoServer(restaurant) {
+  if (!restaurant) return FALLBACK_IMAGE;
 
   const candidates = [
     restaurant.photo,
@@ -51,14 +51,5 @@ export async function resolveRestaurantPhoto(restaurant, fallback = FALLBACK_IMA
     return p;
   }
 
-  return fallback;
-}
-
-export async function mergeRestaurantPhoto(restaurant, oldPhoto, fallback = FALLBACK_IMAGE) {
-  const explicit = await resolveRestaurantPhoto(restaurant, null);
-  if (explicit) return { ...restaurant, photo: explicit };
-
-  if (coerce(oldPhoto)) return { ...restaurant, photo: oldPhoto };
-
-  return { ...restaurant, photo: fallback };
+  return FALLBACK_IMAGE;
 }

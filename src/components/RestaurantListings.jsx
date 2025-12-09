@@ -1,89 +1,118 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
+import { React, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import renderStars from "@/src/components/Stars.jsx";
-import Filters from "@/src/components/Filters.jsx";
 import { getRestaurantsSnapshot } from "@/src/lib/firebase/firestore.js";
+import Filters from "@/src/components/Filters.jsx";
 
-// CLIENT-SAFE fallback resolver
-import { resolveRestaurantPhotoSync } from "@/src/lib/client/resolvePhoto.js";
+const RestaurantItem = ({ restaurant }) => (
+  <li key={restaurant.id}>
+    <Link href={`/restaurant/${restaurant.id}`}>
+      <ActiveResturant restaurant={restaurant} />
+    </Link>
+  </li>
+);
 
-// -------------------------
-const RestaurantItem = ({ restaurant }) => {
-  const imageSrc = resolveRestaurantPhotoSync(restaurant);
-  const name = restaurant?.name ?? "Restaurant";
+const ActiveResturant = ({ restaurant }) => (
+  <div>
+    <ImageCover photo={restaurant.photo} name={restaurant.name} />
+    <ResturantDetails restaurant={restaurant} />
+  </div>
+);
 
-  return (
-    <li>
-      <Link href={`/restaurant/${restaurant.id}`}>
-        <div>
-          <img className="image-cover" src={imageSrc} alt={name} />
+const ImageCover = ({ photo, name }) => (
+  <div className="image-cover">
+    <img src={photo} alt={name} />
+  </div>
+);
 
-          <h2>{name}</h2>
-          <div className="restaurant__rating">
-            <ul>{renderStars(restaurant.avgRating)}</ul>
-            <span>({restaurant.numRatings})</span>
-          </div>
+const ResturantDetails = ({ restaurant }) => (
+  <div className="restaurant__details">
+    <h2>{restaurant.name}</h2>
+    <RestaurantRating restaurant={restaurant} />
+    <RestaurantMetadata restaurant={restaurant} />
+  </div>
+);
 
-          <p>{restaurant.category} | {restaurant.city}, {restaurant.country}</p>
-        </div>
-      </Link>
-    </li>
-  );
-};
+const RestaurantRating = ({ restaurant }) => (
+  <div className="restaurant__rating">
+    <ul>{renderStars(restaurant.avgRating)}</ul>
+    <span>({restaurant.numRatings})</span>
+  </div>
+);
 
-// -------------------------
+const RestaurantMetadata = ({ restaurant }) => (
+  <div className="restaurant__meta">
+    <p>
+      {restaurant.category} | {restaurant.city} ({restaurant.state})
+    </p>
+  </div>
+);
+
 export default function RestaurantListings({ initialRestaurants, searchParams }) {
   const router = useRouter();
 
   const initialFilters = {
-    category: searchParams.category || "",
     city: searchParams.city || "",
+    category: searchParams.category || "",
+    country: searchParams.country || "",
     sort: searchParams.sort || "rating",
   };
 
   const [restaurants, setRestaurants] = useState(initialRestaurants);
   const [filters, setFilters] = useState(initialFilters);
 
-  // Update URL when filters apply
   useEffect(() => {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.append(key, value);
-    });
-    router.push(`?${params.toString()}`);
-  }, [filters]);
+    routerWithFilters(router, filters);
+  }, [router, filters]);
 
-  // Snapshot updates
   useEffect(() => {
     return getRestaurantsSnapshot((data) => {
       setRestaurants(data);
     }, filters);
   }, [filters]);
 
-  const filtered = restaurants
-    .filter((r) => {
-      if (filters.city && r.city !== filters.city) return false;
-      if (filters.category && !r.categories.includes(filters.category)) return false;
-      return true;
-    })
-    .sort((a, b) =>
-      filters.sort === "review"
-        ? b.review_count - a.review_count
-        : b.stars - a.stars
-    );
-
   return (
     <article>
-      <Filters filters={filters} onChange={setFilters} />
+      <Filters filters={filters} setFilters={setFilters} />
 
       <ul className="restaurants">
-        {filtered.map((restaurant) => (
-          <RestaurantItem key={restaurant.id} restaurant={restaurant} />
-        ))}
+        {restaurants
+          .sort((a, b) => {
+            if (filters.sort === "review") return b.numRatings - a.numRatings;
+            return b.avgRating - a.avgRating;
+          })
+          .filter((r) => {
+            const matchCity = !filters.city || r.city === filters.city;
+            const matchCategory =
+              !filters.category ||
+              (Array.isArray(r.categories)
+                ? r.categories.includes(filters.category)
+                : r.category === filters.category);
+            const matchCountry =
+              !filters.country || (r.state && r.state === filters.country);
+
+            return matchCity && matchCategory && matchCountry;
+          })
+          .map((restaurant) => (
+            <RestaurantItem key={restaurant.id} restaurant={restaurant} />
+          ))}
       </ul>
     </article>
   );
+}
+
+function routerWithFilters(router, filters) {
+  const queryParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== "") {
+      queryParams.append(key, value);
+    }
+  }
+
+  const queryString = queryParams.toString();
+  router.push(`?${queryString}`);
 }

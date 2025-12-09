@@ -1,75 +1,178 @@
-"use client";
+// The filters shown on the restaurant listings page
 
-export default function Filters({
-  categoryList = [],
-  cityList = [],
-  priceList = [],
-  filters = {},
-  onChange = () => {},
-}) {
-  function handleChange(e) {
-    onChange({
-      ...filters,
-      [e.target.name]: e.target.value,
-    });
-  }
+import Tag from "@/src/components/Tag.jsx";
+
+function FilterSelect({ label, options, value, onChange, name, icon }) {
+  return (
+    <div>
+      <img src={icon} alt={label} />
+      <label>
+        {label}
+        <select value={value} onChange={onChange} name={name}>
+          {options.map((option, index) => (
+            <option value={option} key={index}>
+              {option === "" ? "All" : option}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
+export default function Filters({ filters, setFilters }) {
+  const handleSelectionChange = (event, name) => {
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [name]: event.target.value,
+    }));
+  };
+
+  const updateField = (type, value) => {
+    setFilters({ ...filters, [type]: value });
+  };
 
   return (
-    <div className="filters-container p-4 bg-white shadow rounded-lg flex flex-col gap-4">
-      
-      {/* Categoria */}
-      <div className="flex flex-col">
-        <label className="font-semibold text-sm mb-1">Categoria</label>
-        <select
-          name="category"
-          className="border rounded p-2"
-          value={filters.category || ""}
-          onChange={handleChange}
-        >
-          <option value="">Todas</option>
-          {categoryList.map((option, i) => (
-            <option key={i} value={option}>
-              {option || "Todas"}
-            </option>
-          ))}
-        </select>
-      </div>
+    <section className="filter">
+      <details className="filter-menu">
+        <summary>
+          <img src="/filter.svg" alt="filter" />
+          <div>
+            <p>Restaurants</p>
+            <p>Sorted by {filters.sort || "Rating"}</p>
+          </div>
+        </summary>
 
-      {/* Cidade */}
-      <div className="flex flex-col">
-        <label className="font-semibold text-sm mb-1">Cidade</label>
-        <select
-          name="city"
-          className="border rounded p-2"
-          value={filters.city || ""}
-          onChange={handleChange}
+        <form
+          method="GET"
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.target.parentNode.removeAttribute("open");
+          }}
         >
-          <option value="">Todas</option>
-          {cityList.map((option, i) => (
-            <option key={i} value={option}>
-              {option || "Todas"}
-            </option>
-          ))}
-        </select>
-      </div>
+          <FilterSelect
+            label="Category"
+            options={[
+              "Bars",
+              "Bagels",
+              "Coffe & Tea",
+              "Pizza",
+              "Burguers",
+              "Breakfast & Brunch",
+              "American(Traditional)",
+              "American(New)",
+              "American",
+              "Italian",
+              "Chinese",
+              "Japanese",
+              "Mexican",
+              "Indian",
+              "Mediterranean",
+              "Caribbean",
+              "Cajun",
+              "German",
+              "Russian",
+              "Cuban",
+              "Organic",
+              "Tapas"
+              ]}
+            value={filters.category}
+            onChange={(event) => handleSelectionChange(event, "category")}
+            name="category"
+            icon="/food.svg"
+          />
 
-      {/* Preço */}
-      <div className="flex flex-col">
-        <label className="font-semibold text-sm mb-1">Preço</label>
-        <select
-          name="price"
-          className="border rounded p-2"
-          value={filters.price || ""}
-          onChange={handleChange}
-        >
-          <option value="">Todos</option>
-          {priceList.map((option, i) => (
-            <option key={i} value={option}>
-              {option || "Todos"}
-            </option>
-          ))}
-        </select>
+          <FilterSelect
+            label="City"
+            options={[
+              "",
+              "New York",
+              "Los Angeles",
+              "London",
+              "Paris",
+              "Tokyo",
+              "Mumbai",
+              "Dubai",
+              "Amsterdam",
+              "Seoul",
+              "Singapore",
+              "Istanbul",
+            ]}
+            value={filters.city}
+            onChange={(event) => handleSelectionChange(event, "city")}
+            name="city"
+            icon="/location.svg"
+          />
+
+          <FilterSelect
+            label="Country / State"
+            options={[
+              "",
+              "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "FL",
+              "GA", "HI", "IL", "IN", "IA", "KS", "KY", "LA",
+              "MA", "MD", "MI", "MN", "MO", "MS", "MT", "NC",
+              "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH",
+              "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX",
+              "UT", "VA", "VT", "WA", "WI", "WV", "WY"
+            ]}
+            value={filters.country || ""}
+            onChange={(event) => handleSelectionChange(event, "country")}
+            name="country"
+            icon="/location.svg"
+          />
+
+
+          <FilterSelect
+            label="Sort"
+            options={["Rating", "Review"]}
+            value={filters.sort}
+            onChange={(event) => handleSelectionChange(event, "sort")}
+            name="sort"
+            icon="/sortBy.svg"
+          />
+
+          <footer>
+            <menu>
+              <button
+                className="button--cancel"
+                type="reset"
+                onClick={() => {
+                  setFilters({
+                    city: "",
+                    category: "",
+                    price: "",
+                    sort: "",
+                  });
+                }}
+              >
+                Reset
+              </button>
+              <button type="submit" className="button--confirm">
+                Submit
+              </button>
+            </menu>
+          </footer>
+        </form>
+      </details>
+
+      <div className="tags">
+        {Object.entries(filters).map(([type, value]) => {
+          // The main filter bar already specifies what
+          // sorting is being used. So skip showing the
+          // sorting as a 'tag'
+          if (type == "sort" || value == "") {
+            return null;
+          }
+          return (
+            <Tag
+              key={value}
+              type={type}
+              value={value}
+              updateField={updateField}
+            />
+          );
+        })}
       </div>
-    </div>
+    </section>
   );
 }

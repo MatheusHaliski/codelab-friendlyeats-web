@@ -2,53 +2,47 @@
 
 import { useState, useEffect } from "react";
 import Tag from "@/src/components/Tag.jsx";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/src/lib/firebase"; // ajuste o caminho conforme seu projeto
 
 export default function Filters({
   filters,
   setFilters,
+  categoryOptions = [""],
+  cityOptions = [""],
+  countryOptions = ["USA", "Canada", "UK"],
   sortOptions = [
     { value: "rating", label: "Rating" },
     { value: "review", label: "Reviews" },
   ],
 }) {
+  // 🔹 Controle do tipo principal
   const [filterType, setFilterType] = useState("food");
   const [categoryList, setCategoryList] = useState([]);
 
-  // 🔹 Estados carregados dinamicamente do Firestore
-  const [stateOptions, setStateOptions] = useState([]);
+  // 🔹 Opções específicas para cada tipo
+  const foodOptions = [
+    "", "Pizza", "Burgers", "Coffee", "Japanese", "Italian", "Mexican", "Sushi",
+    "Vegetarian", "Seafood", "Desserts"
+  ];
 
-  // 🔹 Carrega "state" diretamente dos documentos Firestore
+  const lifestyleOptions = [
+    "", "Technology", "Hotel", "Education", "Travel", "Spa", "Car", "Pet", "Health"
+  ];
+
   useEffect(() => {
-    async function loadStates() {
-      try {
-        const snapshot = await getDocs(collection(db, "restaurants"));
+    setCategoryList(filterType === "food" ? foodOptions : lifestyleOptions);
+  }, [filterType]);
 
-        const states = new Set();
-
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.state) {
-            states.add(data.state.trim());
-          }
-        });
-
-        setStateOptions(["", ...Array.from(states).sort()]);
-      } catch (err) {
-        console.error("Erro carregando estados:", err);
-      }
-    }
-
-    loadStates();
-  }, []);
-
-  // 🔹 Atualiza filtros
-  const handleSelectionChange = (event, field) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: event.target.value,
+  const handleSelectionChange = (event, name) => {
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [name]: event.target.value,
     }));
+  };
+
+  const handleMainTypeChange = (e) => {
+    setFilterType(e.target.value);
+    // 🔸 Limpa o filtro de categoria ao mudar o tipo
+    setFilters((prev) => ({ ...prev, category: "" }));
   };
 
   const updateField = (type, value) => {
@@ -76,8 +70,37 @@ export default function Filters({
             e.target.parentNode.removeAttribute("open");
           }}
         >
+          {/* 🔸 Novo filtro principal */}
+          <div>
+            <img src="/category.svg" alt="Main Type" />
+            <label>
+              Type
+              <select value={filterType} onChange={handleMainTypeChange}>
+                <option value="food">Food</option>
+                <option value="lifestyle">Lifestyle</option>
+              </select>
+            </label>
+          </div>
 
-          {/* 🔸 Country (fixo ou pode remover se não usa mais) */}
+          {/* 🔸 Filtro secundário (depende do tipo) */}
+          <div>
+            <img src={filterType === "food" ? "/food.svg" : "/lifestyle.svg"} alt="Category" />
+            <label>
+              Category
+              <select
+                value={filters.category}
+                onChange={(e) => handleSelectionChange(e, "category")}
+              >
+                {categoryList.map((option, i) => (
+                  <option key={i} value={option}>
+                    {option === "" ? "All" : option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {/* 🔸 Country */}
           <div>
             <img src="/globe.svg" alt="Country" />
             <label>
@@ -86,34 +109,16 @@ export default function Filters({
                 value={filters.country}
                 onChange={(e) => handleSelectionChange(e, "country")}
               >
-                <option value="">All</option>
-                <option value="USA">USA</option>
-                <option value="Canada">Canada</option>
-                <option value="UK">UK</option>
-              </select>
-            </label>
-          </div>
-
-          {/* 🔸 STATE — AGORA CARREGADO DO FIREBASE */}
-          <div>
-            <img src="/globe.svg" alt="State" />
-            <label>
-              State
-              <select
-                value={filters.state}
-                onChange={(e) => handleSelectionChange(e, "state")}
-              >
-                <option value="">All</option>
-                {stateOptions.map((st, i) => (
-                  <option key={i} value={st}>
-                    {st || "All"}
+                {countryOptions.map((c, i) => (
+                  <option key={i} value={c}>
+                    {c === "" ? "All" : c}
                   </option>
                 ))}
               </select>
             </label>
           </div>
 
-          {/* 🔸 CITY (se quiser, posso tornar dinâmico também) */}
+          {/* 🔸 City */}
           <div>
             <img src="/location.svg" alt="City" />
             <label>
@@ -122,8 +127,11 @@ export default function Filters({
                 value={filters.city}
                 onChange={(e) => handleSelectionChange(e, "city")}
               >
-                <option value="">All</option>
-                {/* Você pode futuramente carregar cidades dinamicamente */}
+                {cityOptions.map((c, i) => (
+                  <option key={i} value={c}>
+                    {c === "" ? "All" : c}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
@@ -154,7 +162,7 @@ export default function Filters({
                 onClick={() =>
                   setFilters({
                     city: "",
-                    state: "",
+                    category: "",
                     country: "",
                     sort: "rating",
                   })
@@ -162,7 +170,6 @@ export default function Filters({
               >
                 Reset
               </button>
-
               <button type="submit" className="button--confirm">
                 Submit
               </button>

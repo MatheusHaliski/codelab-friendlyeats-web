@@ -53,7 +53,7 @@ export default function Filters({
     <section className="filter">
       <details className="filter-menu" open>
         <summary>
-          <img src="/filter.svg" alt="filter" />
+          <img src="/friendly-eats.svg" alt="filter" />
           <div>
             <p>Restaurants</p>
             <p>

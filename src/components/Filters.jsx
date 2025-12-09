@@ -72,7 +72,7 @@ export default function Filters({
         >
           {/* 🔸 Novo filtro principal */}
           <div>
-            <img src="https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/food.svg" alt="Main Type" />
+            <img src="/food.svg" alt="Main Type" />
             <label>
               Type
               <select value={filterType} onChange={handleMainTypeChange}>

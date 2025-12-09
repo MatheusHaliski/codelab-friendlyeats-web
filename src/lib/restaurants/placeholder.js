@@ -1,6 +1,10 @@
 "use server";
 import fetch from "node-fetch";
 
+// /src/lib/restaurants/placeholder.js
+
+export const DEFAULT_RESTAURANT_IMAGE =
+  "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
 
 const FALLBACK_IMAGE_PATH =
   "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";

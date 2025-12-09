@@ -1,5 +1,6 @@
-import fetch from "node-fetch";
 "use server";
+import fetch from "node-fetch";
+
 
 const FALLBACK_IMAGE_PATH =
   "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";

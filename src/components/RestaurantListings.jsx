@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import renderStars from "@/src/components/Stars.jsx";
 import { getRestaurantsSnapshot } from "@/src/lib/firebase/firestore.js";
 import Filters from "@/src/components/Filters.jsx";
-import {  mergeRestaurantPhoto,resolveRestaurantPhoto } from "@src/lib/restaurants/placeholder.js";
+import { mergeRestaurantPhoto, resolveRestaurantPhoto } from "@/src/lib/server/resolvePhoto.js";
 
 // -------------------------------
 // Item individual de restaurante

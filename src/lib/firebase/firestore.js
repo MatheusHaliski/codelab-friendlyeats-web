@@ -247,3 +247,24 @@ function normalizeRestaurantSnapshot(docSnapshot) {
     photo: data.photo ?? null,
   };
 }
+// -------------------------------------------------------------
+// Get reviews by restaurant ID (🔥 corrigindo erro do build)
+// -------------------------------------------------------------
+export async function getReviewsByRestaurantId(
+  restaurantId,
+  firestoreInstance
+) {
+  if (!restaurantId) return [];
+
+  const database = resolveFirestoreInstance(firestoreInstance);
+  const ratingsRef = collection(database, "restaurants", restaurantId, "ratings");
+  const q = query(ratingsRef, orderBy("timestamp", "desc"));
+
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    timestamp: doc.data().timestamp?.toDate?.() ?? null,
+  }));
+}

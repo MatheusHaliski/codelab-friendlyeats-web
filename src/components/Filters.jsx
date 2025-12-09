@@ -2,85 +2,58 @@
 
 import { useState, useEffect } from "react";
 import Tag from "@/src/components/Tag.jsx";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/src/lib/firebase"; // ajuste o caminho conforme seu projeto
 
 export default function Filters({
   filters,
   setFilters,
-  categoryOptions = [""],
-  cityOptions = [""], // <- será ignorado agora
-  countryOptions = ["USA", "Canada", "UK"],
   sortOptions = [
     { value: "rating", label: "Rating" },
     { value: "review", label: "Reviews" },
   ],
 }) {
-  // 🔹 Controle do tipo principal
   const [filterType, setFilterType] = useState("food");
   const [categoryList, setCategoryList] = useState([]);
 
-  // 🔹 Opções específicas para cada tipo
-  const foodOptions = [
-    "Select Food Option", "Pizza", "Burgers", "Coffee", "Japanese", "Italian", "Mexican", "Sushi",
-    "Vegetarian", "Seafood", "Desserts"
-  ];
+  // 🔹 Estados carregados dinamicamente do Firestore
+  const [stateOptions, setStateOptions] = useState([]);
 
-  const lifestyleOptions = [
-    "Select lifestyle Option", "Technology", "Hotel", "Education", "Travel", "Spa", "Car", "Pet", "Health"
-  ];
-
-  // 🔹 CIDADES POR PAÍS
-  const citiesByCountry = {
-    USA: [
-      "Select", "New York", "Los Angeles", "Chicago", "Houston", "Phoenix",
-      "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose",
-    ],
-    Canada: [
-      "Select", "Toronto", "Vancouver", "Montreal", "Calgary", "Ottawa",
-      "Edmonton", "Winnipeg", "Quebec City", "Hamilton",
-    ],
-    UK: [
-      "Select", "London", "Manchester", "Birmingham", "Liverpool", "Leeds",
-      "Glasgow", "Bristol", "Sheffield", "Edinburgh",
-    ]
-  };
-
-  // 🔹 Atualiza a lista de categorias conforme o tipo
+  // 🔹 Carrega "state" diretamente dos documentos Firestore
   useEffect(() => {
-    setCategoryList(filterType === "food" ? foodOptions : lifestyleOptions);
-  }, [filterType]);
+    async function loadStates() {
+      try {
+        const snapshot = await getDocs(collection(db, "restaurants"));
 
-  // 🔹 Atualiza filtros
-  const handleSelectionChange = (event, name) => {
-    const value = event.target.value;
+        const states = new Set();
 
-    // 🔸 Se o usuário mudar o país → resetar cidade
-    if (name === "country") {
-      setFilters((prev) => ({
-        ...prev,
-        country: value,
-        city: "", // sempre limpa a cidade
-      }));
-      return;
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.state) {
+            states.add(data.state.trim());
+          }
+        });
+
+        setStateOptions(["", ...Array.from(states).sort()]);
+      } catch (err) {
+        console.error("Erro carregando estados:", err);
+      }
     }
 
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      [name]: value,
-    }));
-  };
+    loadStates();
+  }, []);
 
-  // 🔹 Mudança do tipo principal
-  const handleMainTypeChange = (e) => {
-    setFilterType(e.target.value);
-    setFilters((prev) => ({ ...prev, category: "" }));
+  // 🔹 Atualiza filtros
+  const handleSelectionChange = (event, field) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: event.target.value,
+    }));
   };
 
   const updateField = (type, value) => {
     setFilters({ ...filters, [type]: value });
   };
-
-  // 🔹 Cidades exibidas dependem do país selecionado
-  const cityList = citiesByCountry[filters.country] ?? [""];
 
   return (
     <section className="filter">
@@ -103,37 +76,8 @@ export default function Filters({
             e.target.parentNode.removeAttribute("open");
           }}
         >
-          {/* 🔸 Tipo principal */}
-          <div>
-            <img src="/add.svg" alt="Main Type" />
-            <label>
-              Type
-              <select value={filterType} onChange={handleMainTypeChange}>
-                <option value="food">Food</option>
-                <option value="lifestyle">Lifestyle</option>
-              </select>
-            </label>
-          </div>
 
-          {/* 🔸 Categoria */}
-          <div>
-            <img src={filterType === "food" ? "/food.svg" : "/lifestyle.svg"} alt="Category" />
-            <label>
-              Category
-              <select
-                value={filters.category}
-                onChange={(e) => handleSelectionChange(e, "category")}
-              >
-                {categoryList.map((option, i) => (
-                  <option key={i} value={option}>
-                    {option === "" ? "All" : option}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          {/* 🔸 País */}
+          {/* 🔸 Country (fixo ou pode remover se não usa mais) */}
           <div>
             <img src="/globe.svg" alt="Country" />
             <label>
@@ -142,16 +86,33 @@ export default function Filters({
                 value={filters.country}
                 onChange={(e) => handleSelectionChange(e, "country")}
               >
-                {countryOptions.map((c, i) => (
-                  <option key={i} value={c}>
-                    {c === "" ? "All" : c}
+                <option value="USA">USA</option>
+                <option value="Canada">Canada</option>
+                <option value="UK">UK</option>
+              </select>
+            </label>
+          </div>
+
+          {/* 🔸 STATE — AGORA CARREGADO DO FIREBASE */}
+          <div>
+            <img src="/globe.svg" alt="State" />
+            <label>
+              State
+              <select
+                value={filters.state}
+                onChange={(e) => handleSelectionChange(e, "state")}
+              >
+                <option value="">All</option>
+                {stateOptions.map((st, i) => (
+                  <option key={i} value={st}>
+                    {st || "All"}
                   </option>
                 ))}
               </select>
             </label>
           </div>
 
-          {/* 🔸 Cidade → muda conforme o país */}
+          {/* 🔸 CITY (se quiser, posso tornar dinâmico também) */}
           <div>
             <img src="/location.svg" alt="City" />
             <label>
@@ -160,16 +121,13 @@ export default function Filters({
                 value={filters.city}
                 onChange={(e) => handleSelectionChange(e, "city")}
               >
-                {cityList.map((city, i) => (
-                  <option key={i} value={city}>
-                    {city === "" ? "All" : city}
-                  </option>
-                ))}
+                <option value="">All</option>
+                {/* Você pode futuramente carregar cidades dinamicamente */}
               </select>
             </label>
           </div>
 
-          {/* 🔸 Ordenação */}
+          {/* 🔸 Sort */}
           <div>
             <img src="/sortBy.svg" alt="Sort" />
             <label>
@@ -195,7 +153,7 @@ export default function Filters({
                 onClick={() =>
                   setFilters({
                     city: "",
-                    category: "",
+                    state: "",
                     country: "",
                     sort: "rating",
                   })
@@ -203,6 +161,7 @@ export default function Filters({
               >
                 Reset
               </button>
+
               <button type="submit" className="button--confirm">
                 Submit
               </button>
@@ -211,7 +170,6 @@ export default function Filters({
         </form>
       </details>
 
-      {/* TAGS DINÂMICAS */}
       <div className="tags">
         {Object.entries(filters).map(([type, value]) => {
           if (type === "sort" || value === "") return null;

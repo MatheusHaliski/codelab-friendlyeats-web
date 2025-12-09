@@ -7,7 +7,7 @@ export default function Filters({
   filters,
   setFilters,
   categoryOptions = [""],
-  cityOptions = [""],
+  cityOptions = [""], // <- será ignorado agora
   countryOptions = ["USA", "Canada", "UK"],
   sortOptions = [
     { value: "rating", label: "Rating" },
@@ -28,26 +28,59 @@ export default function Filters({
     "Select lifestyle Option", "Technology", "Hotel", "Education", "Travel", "Spa", "Car", "Pet", "Health"
   ];
 
+  // 🔹 CIDADES POR PAÍS
+  const citiesByCountry = {
+    USA: [
+      "Select", "New York", "Los Angeles", "Chicago", "Houston", "Phoenix",
+      "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose",
+    ],
+    Canada: [
+      "Select", "Toronto", "Vancouver", "Montreal", "Calgary", "Ottawa",
+      "Edmonton", "Winnipeg", "Quebec City", "Hamilton",
+    ],
+    UK: [
+      "Select", "London", "Manchester", "Birmingham", "Liverpool", "Leeds",
+      "Glasgow", "Bristol", "Sheffield", "Edinburgh",
+    ]
+  };
+
+  // 🔹 Atualiza a lista de categorias conforme o tipo
   useEffect(() => {
     setCategoryList(filterType === "food" ? foodOptions : lifestyleOptions);
   }, [filterType]);
 
+  // 🔹 Atualiza filtros
   const handleSelectionChange = (event, name) => {
+    const value = event.target.value;
+
+    // 🔸 Se o usuário mudar o país → resetar cidade
+    if (name === "country") {
+      setFilters((prev) => ({
+        ...prev,
+        country: value,
+        city: "", // sempre limpa a cidade
+      }));
+      return;
+    }
+
     setFilters((prevFilters) => ({
       ...prevFilters,
-      [name]: event.target.value,
+      [name]: value,
     }));
   };
 
+  // 🔹 Mudança do tipo principal
   const handleMainTypeChange = (e) => {
     setFilterType(e.target.value);
-    // 🔸 Limpa o filtro de categoria ao mudar o tipo
     setFilters((prev) => ({ ...prev, category: "" }));
   };
 
   const updateField = (type, value) => {
     setFilters({ ...filters, [type]: value });
   };
+
+  // 🔹 Cidades exibidas dependem do país selecionado
+  const cityList = citiesByCountry[filters.country] ?? [""];
 
   return (
     <section className="filter">
@@ -70,7 +103,7 @@ export default function Filters({
             e.target.parentNode.removeAttribute("open");
           }}
         >
-          {/* 🔸 Novo filtro principal */}
+          {/* 🔸 Tipo principal */}
           <div>
             <img src="/add.svg" alt="Main Type" />
             <label>
@@ -82,7 +115,7 @@ export default function Filters({
             </label>
           </div>
 
-          {/* 🔸 Filtro secundário (depende do tipo) */}
+          {/* 🔸 Categoria */}
           <div>
             <img src={filterType === "food" ? "/food.svg" : "/lifestyle.svg"} alt="Category" />
             <label>
@@ -100,7 +133,7 @@ export default function Filters({
             </label>
           </div>
 
-          {/* 🔸 Country */}
+          {/* 🔸 País */}
           <div>
             <img src="/globe.svg" alt="Country" />
             <label>
@@ -118,7 +151,7 @@ export default function Filters({
             </label>
           </div>
 
-          {/* 🔸 City */}
+          {/* 🔸 Cidade → muda conforme o país */}
           <div>
             <img src="/location.svg" alt="City" />
             <label>
@@ -127,16 +160,16 @@ export default function Filters({
                 value={filters.city}
                 onChange={(e) => handleSelectionChange(e, "city")}
               >
-                {cityOptions.map((c, i) => (
-                  <option key={i} value={c}>
-                    {c === "" ? "All" : c}
+                {cityList.map((city, i) => (
+                  <option key={i} value={city}>
+                    {city === "" ? "All" : city}
                   </option>
                 ))}
               </select>
             </label>
           </div>
 
-          {/* 🔸 Sort */}
+          {/* 🔸 Ordenação */}
           <div>
             <img src="/sortBy.svg" alt="Sort" />
             <label>
@@ -178,6 +211,7 @@ export default function Filters({
         </form>
       </details>
 
+      {/* TAGS DINÂMICAS */}
       <div className="tags">
         {Object.entries(filters).map(([type, value]) => {
           if (type === "sort" || value === "") return null;

@@ -72,7 +72,7 @@ export default function Filters({
         >
           {/* 🔸 Novo filtro principal */}
           <div>
-            <img src="/food.svg" alt="Main Type" />
+            <img src="/add.svg" alt="Main Type" />
             <label>
               Type
               <select value={filterType} onChange={handleMainTypeChange}>

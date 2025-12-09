@@ -93,7 +93,7 @@ export default function Filters({
               >
                 {categoryList.map((option, i) => (
                   <option key={i} value={option}>
-                    {option === "" ? "All" : option}
+                    {option === "" ? "Selecione opção" : option}
                   </option>
                 ))}
               </select>
@@ -111,7 +111,7 @@ export default function Filters({
               >
                 {countryOptions.map((c, i) => (
                   <option key={i} value={c}>
-                    {c === "" ? "All" : c}
+                    {c === "" ? "Selecione opção" : c}
                   </option>
                 ))}
               </select>
@@ -129,7 +129,7 @@ export default function Filters({
               >
                 {cityOptions.map((c, i) => (
                   <option key={i} value={c}>
-                    {c === "" ? "All" : c}
+                    {c === "" ? "Selecione opção" : c}
                   </option>
                 ))}
               </select>

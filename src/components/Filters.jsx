@@ -72,7 +72,7 @@ export default function Filters({
         >
           {/* 🔸 Novo filtro principal */}
           <div>
-            <img src="/category.svg" alt="Main Type" />
+            <img src="/add.svg" alt="Main Type" />
             <label>
               Type
               <select value={filterType} onChange={handleMainTypeChange}>
@@ -102,7 +102,7 @@ export default function Filters({
 
           {/* 🔸 Country */}
           <div>
-            <img src="/globe.svg" alt="Country" />
+            <img src="/add.svg" alt="Country" />
             <label>
               Country
               <select

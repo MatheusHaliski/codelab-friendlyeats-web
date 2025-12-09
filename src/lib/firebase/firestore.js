@@ -252,3 +252,40 @@ export async function getReviewsByRestaurantId(restaurantId) {
     timestamp: doc.data().timestamp.toDate(),
   }));
 }
+// ==========================================
+// 🔥 Adiciona suporte ao snapshot por ID
+// ==========================================
+export function getRestaurantSnapshotById(restaurantId, callback, firestoreInstance) {
+  if (!restaurantId || typeof callback !== "function") return;
+
+  const database = resolveFirestoreInstance(firestoreInstance);
+  const docRef = doc(database, "restaurants", restaurantId);
+
+  return onSnapshot(docRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      callback(null);
+      return;
+    }
+    callback(normalizeRestaurantSnapshot(snapshot));
+  });
+}
+
+// ==========================================
+// 🔥 Snapshot para reviews (por restaurante)
+// ==========================================
+export function getReviewsSnapshotByRestaurantId(restaurantId, callback, firestoreInstance) {
+  if (!restaurantId || typeof callback !== "function") return;
+
+  const database = resolveFirestoreInstance(firestoreInstance);
+  const ratingsRef = collection(database, "restaurants", restaurantId, "ratings");
+  const q = query(ratingsRef, orderBy("timestamp", "desc"));
+
+  return onSnapshot(q, (querySnapshot) => {
+    const results = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().timestamp?.toDate?.() ?? null,
+    }));
+    callback(results);
+  });
+}

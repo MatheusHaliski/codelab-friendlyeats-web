@@ -86,6 +86,7 @@ export default function Filters({
                 value={filters.country}
                 onChange={(e) => handleSelectionChange(e, "country")}
               >
+                <option value="">All</option>
                 <option value="USA">USA</option>
                 <option value="Canada">Canada</option>
                 <option value="UK">UK</option>

@@ -7,6 +7,9 @@ import renderStars from "@/src/components/Stars.jsx";
 import { getRestaurantsSnapshot } from "@/src/lib/firebase/firestore.js";
 import Filters from "@/src/components/Filters.jsx";
 
+const FALLBACK_IMAGE =
+  "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
+
 const RestaurantItem = ({ restaurant }) => (
   <li key={restaurant.id}>
     <Link href={`/restaurant/${restaurant.id}`}>
@@ -22,11 +25,21 @@ const ActiveResturant = ({ restaurant }) => (
   </div>
 );
 
-const ImageCover = ({ photo, name }) => (
-  <div className="image-cover">
-    <img src={photo} alt={name} />
-  </div>
-);
+const ImageCover = ({ photo, name }) => {
+  const imageSrc = photo || FALLBACK_IMAGE;
+
+  const handleImageError = (event) => {
+    if (event.target.src !== FALLBACK_IMAGE) {
+      event.target.src = FALLBACK_IMAGE;
+    }
+  };
+
+  return (
+    <div className="image-cover">
+      <img src={imageSrc} alt={name} onError={handleImageError} />
+    </div>
+  );
+};
 
 const ResturantDetails = ({ restaurant }) => (
   <div className="restaurant__details">
@@ -63,9 +76,10 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
   };
 
   const [restaurants, setRestaurants] = useState(initialRestaurants);
+  const [allRestaurants, setAllRestaurants] = useState(initialRestaurants);
   const [filters, setFilters] = useState(initialFilters);
 
-  const locationOptions = restaurants.reduce((acc, restaurant) => {
+  const locationOptions = allRestaurants.reduce((acc, restaurant) => {
     const country = restaurant.country || "";
     const state = restaurant.state || "";
     const city = restaurant.city || "";
@@ -98,6 +112,14 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
       setRestaurants(data);
     }, filters);
   }, [filters]);
+
+  useEffect(() => {
+    const unsubscribe = getRestaurantsSnapshot((data) => {
+      setAllRestaurants(data);
+    });
+
+    return unsubscribe;
+  }, []);
 
   return (
     <article>

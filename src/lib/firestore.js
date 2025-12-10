@@ -103,13 +103,14 @@ function resolveFirestoreInstance(possibleDb) {
         });
       }
 
-function applyQueryFilters(baseRef, { category, city, country, state, sort }) {
+function applyQueryFilters(baseRef, { category, city, country, state, sort, type }) {
   const constraints = [];
 
   if (category) constraints.push(where("categories", "array-contains", category));
   if (city) constraints.push(where("city", "==", city));
   if (country) constraints.push(where("country", "==", country));
   if (state) constraints.push(where("state", "==", state));
+  if (type) constraints.push(where("type", "==", type));
 
   const sortField = sort === "review" ? "review_count" : "stars";
   constraints.push(orderBy(sortField, "desc"));
@@ -117,27 +118,55 @@ function applyQueryFilters(baseRef, { category, city, country, state, sort }) {
   return query(baseRef, ...constraints);
 }
 
+function resolveGetRestaurantsArgs(possibleDbOrFilters = {}, maybeFilters = {}) {
+  const looksLikeFirestore = Boolean(possibleDbOrFilters?._databaseId);
+
+  return looksLikeFirestore
+    ? { database: possibleDbOrFilters, filters: maybeFilters }
+    : { database: db, filters: possibleDbOrFilters };
+}
+
+function getCollectionForType(database, type) {
+  const collectionName = type === "lifestyle" ? "lifestyle" : "restaurants";
+  return collection(database, collectionName);
+}
 
 // 🔹 Retorna lista de restaurantes
-      export async function getRestaurants(filters = {}) {
-        const restaurantsRef = collection(db, "restaurants");
-        const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
-        const results = await getDocs(restaurantsQuery);
+export async function getRestaurants(possibleDbOrFilters = {}, maybeFilters = {}) {
+  const { database, filters } = resolveGetRestaurantsArgs(
+    possibleDbOrFilters,
+    maybeFilters
+  );
 
-        return results.docs.map(normalizeRestaurantSnapshot);
-      }
+  const restaurantsRef = getCollectionForType(database, filters.type);
+  const restaurantsQuery = applyQueryFilters(restaurantsRef, {
+    ...filters,
+    type: filters.type ?? "food",
+  });
+  const results = await getDocs(restaurantsQuery);
+
+  return results.docs.map(normalizeRestaurantSnapshot);
+}
 
 // 🔹 Escuta mudanças em tempo real
-      export function getRestaurantsSnapshot(cb, filters = {}) {
-        const restaurantsRef = collection(db, "restaurants");
-        const restaurantsQuery = applyQueryFilters(restaurantsRef, filters);
+export function getRestaurantsSnapshot(cb, possibleDbOrFilters = {}, maybeFilters = {}) {
+  const { database, filters } = resolveGetRestaurantsArgs(
+    possibleDbOrFilters,
+    maybeFilters
+  );
 
-        return onSnapshot(restaurantsQuery, (querySnapshot) => {
+  const restaurantsRef = getCollectionForType(database, filters.type);
+  const restaurantsQuery = applyQueryFilters(restaurantsRef, {
+    ...filters,
+    type: filters.type ?? "food",
+  });
 
-          const results = querySnapshot.docs.map(normalizeRestaurantSnapshot);
-          cb(results);
-        });
-      }
+  return onSnapshot(restaurantsQuery, (querySnapshot) => {
+
+    const results = querySnapshot.docs.map(normalizeRestaurantSnapshot);
+    cb(results);
+  });
+}
 
 // 🔹 Busca restaurante por ID
       export async function getRestaurantById(restaurantId) {
@@ -182,6 +211,8 @@ function applyQueryFilters(baseRef, { category, city, country, state, sort }) {
         const address = data.address ?? data.address;
         const state = data.state ?? "";
         const country = data.country ?? "";
+        const type = data.type ??
+          (docSnapshot.ref.parent.id === "lifestyle" ? "lifestyle" : "food");
         return {
           id: docSnapshot.id,
           ...data,
@@ -190,6 +221,7 @@ function applyQueryFilters(baseRef, { category, city, country, state, sort }) {
           address,
           state,
           country,
+          type,
           category: primaryCategory,
           review_count: reviewCount,
           stars: averageRating,

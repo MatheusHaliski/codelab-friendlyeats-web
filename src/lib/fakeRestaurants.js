@@ -49,6 +49,7 @@ export async function generateFakeRestaurantsAndReviews() {
         randomData.restaurantCategories[
           randomNumberBetween(0, randomData.restaurantCategories.length - 1)
         ],
+      type: "food",
       name: randomData.restaurantNames[
         randomNumberBetween(0, randomData.restaurantNames.length - 1)
       ],

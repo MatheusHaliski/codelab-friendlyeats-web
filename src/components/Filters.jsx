@@ -15,6 +15,11 @@ export default function Filters({
     { value: "review", label: "Reviews" },
   ],
 }) {
+  const typeOptions = [
+    { value: "food", label: "Food" },
+    { value: "lifestyle", label: "Lifestyle" },
+  ];
+
   // 🔹 Opções específicas para cada tipo
   const foodOptions = [
     "Pizza",
@@ -94,6 +99,24 @@ export default function Filters({
             e.target.parentNode.removeAttribute("open");
           }}
         >
+          {/* TYPE */}
+          <div>
+            <img src="/filter.svg" alt="Type" />
+            <label>
+              Type
+              <select
+                value={filters.type}
+                onChange={(e) => handleSelectionChange(e, "type")}
+              >
+                {typeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
           {/* CATEGORY */}
           <div>
             <img src="/food.svg" alt="Category" />
@@ -194,6 +217,7 @@ export default function Filters({
                     category: "",
                     country: "",
                     state: "",
+                    type: "food",
                     sort: "rating",
                   })
                 }

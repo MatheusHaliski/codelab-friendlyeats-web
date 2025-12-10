@@ -103,12 +103,13 @@ function resolveFirestoreInstance(possibleDb) {
         });
       }
 
-function applyQueryFilters(baseRef, { category, city, country, sort }) {
+function applyQueryFilters(baseRef, { category, city, country, state, sort }) {
   const constraints = [];
 
   if (category) constraints.push(where("categories", "array-contains", category));
   if (city) constraints.push(where("city", "==", city));
   if (country) constraints.push(where("country", "==", country));
+  if (state) constraints.push(where("state", "==", state));
 
   const sortField = sort === "review" ? "review_count" : "stars";
   constraints.push(orderBy(sortField, "desc"));
@@ -179,7 +180,8 @@ function applyQueryFilters(baseRef, { category, city, country, sort }) {
         const price = Number.isFinite(data.price) ? data.price : 0;
         const city =  data.city ?? "";
         const address = data.address ?? data.address;
-        const state = data.state;
+        const state = data.state ?? "";
+        const country = data.country ?? "";
         return {
           id: docSnapshot.id,
           ...data,
@@ -187,6 +189,7 @@ function applyQueryFilters(baseRef, { category, city, country, sort }) {
           city,
           address,
           state,
+          country,
           category: primaryCategory,
           review_count: reviewCount,
           stars: averageRating,

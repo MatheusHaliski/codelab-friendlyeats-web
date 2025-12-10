@@ -246,3 +246,32 @@ export function getRestaurantsSnapshot(cb, possibleDbOrFilters = {}, maybeFilter
           timestamp: doc.data().timestamp.toDate(),
         }));
       }
+
+// 🔹 Escuta reviews em tempo real
+export function getReviewsSnapshotByRestaurantId(
+  restaurantId,
+  cb,
+  firestoreInstance
+) {
+  if (!restaurantId || typeof cb !== "function") return () => {};
+
+  const database = resolveFirestoreInstance(firestoreInstance);
+  const reviewsQuery = query(
+    collection(database, "restaurants", restaurantId, "ratings"),
+    orderBy("timestamp", "desc")
+  );
+
+  return onSnapshot(reviewsQuery, (querySnapshot) => {
+    const results = querySnapshot.docs.map((docSnapshot) => {
+      const data = docSnapshot.data();
+
+      return {
+        id: docSnapshot.id,
+        ...data,
+        timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : data.timestamp,
+      };
+    });
+
+    cb(results);
+  });
+}

@@ -18,7 +18,7 @@ import { db } from "@/src/lib/firebase/clientApp";
 import {
   inferTypeFromCategories,
   restaurantMatchesType,
-} from "@/src/lib/categoryKeywords";
+} from "@/src/lib/firebase/categoryKeywords";
 
 function resolveFirestoreInstance(possibleDb) {
   return possibleDb ?? db;

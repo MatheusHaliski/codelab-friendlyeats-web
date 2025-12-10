@@ -103,19 +103,30 @@ function resolveFirestoreInstance(possibleDb) {
         });
       }
 
-function applyQueryFilters(baseRef, { category, city, country, state, sort, type }) {
+function applyQueryFilters(baseRef, { category, city, country, state, sort }) {
   const constraints = [];
 
   if (category) constraints.push(where("categories", "array-contains", category));
   if (city) constraints.push(where("city", "==", city));
   if (country) constraints.push(where("country", "==", country));
   if (state) constraints.push(where("state", "==", state));
-  if (type) constraints.push(where("type", "==", type));
 
   const sortField = sort === "review" ? "review_count" : "stars";
   constraints.push(orderBy(sortField, "desc"));
 
   return query(baseRef, ...constraints);
+}
+
+async function addTypeFieldIfMissing(querySnapshot, fallbackType) {
+  const typeValue = fallbackType === "lifestyle" ? "lifestyle" : "food";
+
+  const updates = querySnapshot.docs
+    .filter((docSnapshot) => !docSnapshot.data()?.type)
+    .map((docSnapshot) => updateDoc(docSnapshot.ref, { type: typeValue }));
+
+  if (updates.length) {
+    await Promise.all(updates);
+  }
 }
 
 function resolveGetRestaurantsArgs(possibleDbOrFilters = {}, maybeFilters = {}) {
@@ -144,6 +155,7 @@ export async function getRestaurants(possibleDbOrFilters = {}, maybeFilters = {}
     type: filters.type ?? "food",
   });
   const results = await getDocs(restaurantsQuery);
+  await addTypeFieldIfMissing(results, filters.type);
 
   return results.docs.map(normalizeRestaurantSnapshot);
 }
@@ -162,6 +174,7 @@ export function getRestaurantsSnapshot(cb, possibleDbOrFilters = {}, maybeFilter
   });
 
   return onSnapshot(restaurantsQuery, (querySnapshot) => {
+    addTypeFieldIfMissing(querySnapshot, filters.type).catch(console.error);
 
     const results = querySnapshot.docs.map(normalizeRestaurantSnapshot);
     cb(results);

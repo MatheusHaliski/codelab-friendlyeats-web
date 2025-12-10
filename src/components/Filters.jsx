@@ -9,6 +9,7 @@ export default function Filters({
   categoryOptions = [""],
   cityOptions = [""],
   countryOptions = ["USA", "Canada", "UK"],
+  stateOptions = [""],
   sortOptions = [
     { value: "rating", label: "Rating" },
     { value: "review", label: "Reviews" },
@@ -36,6 +37,25 @@ export default function Filters({
     setFilters((prevFilters) => ({
       ...prevFilters,
       [name]: event.target.value,
+    }));
+  };
+
+  const handleCountryChange = (event) => {
+    const value = event.target.value;
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      country: value,
+      state: "",
+      city: "",
+    }));
+  };
+
+  const handleStateChange = (event) => {
+    const value = event.target.value;
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      state: value,
+      city: "",
     }));
   };
 
@@ -107,11 +127,30 @@ export default function Filters({
               Country
               <select
                 value={filters.country}
-                onChange={(e) => handleSelectionChange(e, "country")}
+                onChange={handleCountryChange}
               >
                 {countryOptions.map((c, i) => (
                   <option key={i} value={c}>
                     {c === "" ? "Selecione opção" : c}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {/* 🔸 State */}
+          <div>
+            <img src="/add.svg" alt="State" />
+            <label>
+              State
+              <select
+                value={filters.state}
+                onChange={handleStateChange}
+                disabled={!filters.country}
+              >
+                {stateOptions.map((state, i) => (
+                  <option key={i} value={state}>
+                    {state === "" ? "Selecione opção" : state}
                   </option>
                 ))}
               </select>
@@ -126,6 +165,7 @@ export default function Filters({
               <select
                 value={filters.city}
                 onChange={(e) => handleSelectionChange(e, "city")}
+                disabled={!filters.state}
               >
                 {cityOptions.map((c, i) => (
                   <option key={i} value={c}>
@@ -164,6 +204,7 @@ export default function Filters({
                     city: "",
                     category: "",
                     country: "",
+                    state: "",
                     sort: "rating",
                   })
                 }

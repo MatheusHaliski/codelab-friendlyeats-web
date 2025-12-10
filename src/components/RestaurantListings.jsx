@@ -58,11 +58,36 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
     city: searchParams.city || "",
     category: searchParams.category || "",
     country: searchParams.country || "",
+    state: searchParams.state || "",
     sort: searchParams.sort || "rating",
   };
 
   const [restaurants, setRestaurants] = useState(initialRestaurants);
   const [filters, setFilters] = useState(initialFilters);
+
+  const locationOptions = restaurants.reduce((acc, restaurant) => {
+    const country = restaurant.country || "";
+    const state = restaurant.state || "";
+    const city = restaurant.city || "";
+
+    if (!acc[country]) acc[country] = {};
+    if (!acc[country][state]) acc[country][state] = new Set();
+    if (city) acc[country][state].add(city);
+
+    return acc;
+  }, {});
+
+  const countryOptions = ["", ...Object.keys(locationOptions).sort()];
+  const stateOptions = [
+    "",
+    ...Object.keys(locationOptions[filters.country] || {}).sort(),
+  ];
+  const cityOptions = [
+    "",
+    ...Array.from(
+      locationOptions[filters.country]?.[filters.state] || new Set()
+    ).sort(),
+  ];
 
   useEffect(() => {
     routerWithFilters(router, filters);
@@ -76,7 +101,13 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
 
   return (
     <article>
-      <Filters filters={filters} setFilters={setFilters} />
+      <Filters
+        filters={filters}
+        setFilters={setFilters}
+        cityOptions={cityOptions}
+        countryOptions={countryOptions}
+        stateOptions={stateOptions}
+      />
 
       <ul className="restaurants">
         {restaurants
@@ -92,9 +123,10 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
                 ? r.categories.includes(filters.category)
                 : r.category === filters.category);
             const matchCountry =
-              !filters.country || (r.state && r.state === filters.country);
+              !filters.country || r.country === filters.country;
+            const matchState = !filters.state || r.state === filters.state;
 
-            return matchCity && matchCategory && matchCountry;
+            return matchCity && matchCategory && matchCountry && matchState;
           })
           .map((restaurant) => (
             <RestaurantItem key={restaurant.id} restaurant={restaurant} />

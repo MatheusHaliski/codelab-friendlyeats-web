@@ -147,8 +147,9 @@ function resolveGetRestaurantsArgs(possibleDbOrFilters = {}, maybeFilters = {}) 
     : { database: db, filters: possibleDbOrFilters };
 }
 
-function getCollectionForType(database) {
-  return collection(database, "restaurants");
+function getCollectionForType(database, type) {
+  const collectionName = type === "lifestyle" ? "lifestyle" : "restaurants";
+  return collection(database, collectionName);
 }
 
 // 🔹 Retorna lista de restaurantes

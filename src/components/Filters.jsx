@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Tag from "@/src/components/Tag.jsx";
 
 export default function Filters({
@@ -15,23 +14,21 @@ export default function Filters({
     { value: "review", label: "Reviews" },
   ],
 }) {
-  // 🔹 Controle do tipo principal
-  const [filterType, setFilterType] = useState("food");
-  const [categoryList, setCategoryList] = useState([]);
-
-  // 🔹 Opções específicas para cada tipo
   const foodOptions = [
-    "", "Pizza", "Burgers", "Coffee", "Japanese", "Italian", "Mexican", "Sushi",
-    "Vegetarian", "Seafood", "Desserts"
+    "",
+    "Pizza",
+    "Burgers",
+    "Coffee",
+    "Japanese",
+    "Italian",
+    "Mexican",
+    "Sushi",
+    "Vegetarian",
+    "Seafood",
+    "Desserts",
   ];
 
-  const lifestyleOptions = [
-    "", "Technology", "Hotel", "Education", "Travel", "Spa", "Car", "Pet", "Health"
-  ];
-
-  useEffect(() => {
-    setCategoryList(filterType === "food" ? foodOptions : lifestyleOptions);
-  }, [filterType]);
+  const categoryList = categoryOptions?.length ? categoryOptions : foodOptions;
 
   const handleSelectionChange = (event, name) => {
     setFilters((prevFilters) => ({
@@ -59,12 +56,6 @@ export default function Filters({
     }));
   };
 
-  const handleMainTypeChange = (e) => {
-    setFilterType(e.target.value);
-    // 🔸 Limpa o filtro de categoria ao mudar o tipo
-    setFilters((prev) => ({ ...prev, category: "" }));
-  };
-
   const updateField = (type, value) => {
     setFilters({ ...filters, [type]: value });
   };
@@ -90,21 +81,8 @@ export default function Filters({
             e.target.parentNode.removeAttribute("open");
           }}
         >
-          {/* 🔸 Novo filtro principal */}
           <div>
-            <img src="/add.svg" alt="Main Type" />
-            <label>
-              Type
-              <select value={filterType} onChange={handleMainTypeChange}>
-                <option value="food">Food</option>
-                <option value="lifestyle">Lifestyle</option>
-              </select>
-            </label>
-          </div>
-
-          {/* 🔸 Filtro secundário (depende do tipo) */}
-          <div>
-            <img src={filterType === "food" ? "/food.svg" : "/lifestyle.svg"} alt="Category" />
+            <img src="/food.svg" alt="Category" />
             <label>
               Category
               <select

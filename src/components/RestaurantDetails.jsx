@@ -1,6 +1,9 @@
 // This component shows restaurant metadata, and offers some actions to the user like uploading a new restaurant image, and adding a review.
 
 import React from "react";
+
+const FALLBACK_IMAGE =
+  "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
 import renderStars from "@/src/components/Stars.jsx";
 
 const RestaurantDetails = ({
@@ -11,9 +14,17 @@ const RestaurantDetails = ({
   isOpen,
   children,
 }) => {
+  const imageSrc = restaurant.photo || FALLBACK_IMAGE;
+
+  const handleImageError = (event) => {
+    if (event.target.src !== FALLBACK_IMAGE) {
+      event.target.src = FALLBACK_IMAGE;
+    }
+  };
+
   return (
     <section className="img__section">
-      <img src={restaurant.photo} alt={restaurant.name} />
+      <img src={imageSrc} alt={restaurant.name} onError={handleImageError} />
 
       <div className="actions">
         {userId && (

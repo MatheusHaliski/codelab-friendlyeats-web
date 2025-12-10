@@ -72,6 +72,7 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
     category: searchParams.category || "",
     country: searchParams.country || "",
     state: searchParams.state || "",
+    type: searchParams.type || "food",
     sort: searchParams.sort || "rating",
   };
 
@@ -127,18 +128,21 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
   }, [router, filters]);
 
   useEffect(() => {
-    return getRestaurantsSnapshot((data) => {
-      setRestaurants(data);
-    }, filters);
+    return getRestaurantsSnapshot(
+      (data) => {
+        setRestaurants(data);
+      },
+      filters
+    );
   }, [filters]);
 
   useEffect(() => {
     const unsubscribe = getRestaurantsSnapshot((data) => {
       setAllRestaurants(data);
-    });
+    }, { type: filters.type });
 
     return unsubscribe;
-  }, []);
+  }, [filters.type]);
 
   return (
     <article>

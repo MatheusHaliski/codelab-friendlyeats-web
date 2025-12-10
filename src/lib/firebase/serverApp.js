@@ -24,6 +24,6 @@ export async function getAuthenticatedAppForUser() {
   // autenticação básica (pode ajustar conforme necessidade)
   const auth = getAuth(app);
   const firestore = getFirestore(app);
-  return { app, auth, firestore };
+  return { app, firebaseServerApp: app, auth, firestore };
 }
 

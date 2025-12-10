@@ -168,15 +168,23 @@ export function getRestaurantsSnapshot(cb, possibleDbOrFilters = {}, maybeFilter
   });
 }
 
-// 🔹 Busca restaurante por ID
-      export async function getRestaurantById(restaurantId) {
-        if (!restaurantId) return null;
-        const docRef = doc(db, "restaurants", restaurantId);
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) return null;
+// 🔹 Busca restaurante por ID (aceita opcionalmente uma instância do Firestore)
+export async function getRestaurantById(possibleDbOrId, maybeRestaurantId) {
+  const looksLikeFirestoreInstance = Boolean(possibleDbOrId?._databaseId);
 
-        return normalizeRestaurantSnapshot(docSnap);
-      }
+  const restaurantId = looksLikeFirestoreInstance
+    ? maybeRestaurantId
+    : possibleDbOrId;
+
+  if (!restaurantId) return null;
+
+  const database = looksLikeFirestoreInstance ? possibleDbOrId : db;
+  const docRef = doc(database, "restaurants", restaurantId);
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) return null;
+
+  return normalizeRestaurantSnapshot(docSnap);
+}
 
 // 🔹 Escuta um restaurante específico
       export function getRestaurantSnapshotById(restaurantId, cb) {

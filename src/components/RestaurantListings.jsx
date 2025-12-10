@@ -79,6 +79,25 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
   const [allRestaurants, setAllRestaurants] = useState(initialRestaurants);
   const [filters, setFilters] = useState(initialFilters);
 
+  const categoryOptions = [
+    "",
+    ...Array.from(
+      allRestaurants.reduce((acc, restaurant) => {
+        if (Array.isArray(restaurant.categories)) {
+          restaurant.categories.forEach((category) => {
+            if (category) acc.add(category);
+          });
+        }
+
+        if (restaurant.category) {
+          acc.add(restaurant.category);
+        }
+
+        return acc;
+      }, new Set())
+    ).sort(),
+  ];
+
   const locationOptions = allRestaurants.reduce((acc, restaurant) => {
     const country = restaurant.country || "";
     const state = restaurant.state || "";
@@ -126,6 +145,7 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
       <Filters
         filters={filters}
         setFilters={setFilters}
+        categoryOptions={categoryOptions}
         cityOptions={cityOptions}
         countryOptions={countryOptions}
         stateOptions={stateOptions}

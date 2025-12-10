@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Tag from "@/src/components/Tag.jsx";
 
 export default function Filters({
@@ -14,11 +15,8 @@ export default function Filters({
     { value: "review", label: "Reviews" },
   ],
 }) {
-
-
   // 🔹 Opções específicas para cada tipo
   const foodOptions = [
-
     "Pizza",
     "Burgers",
     "Coffee",
@@ -31,8 +29,13 @@ export default function Filters({
     "Desserts",
   ];
 
-  useEffect(() => {
-  const categoryList = categoryOptions?.length ? categoryOptions : foodOptions;
+  // Escolhe categoryList dinamicamente
+  const categoryList =
+    categoryOptions?.length ? categoryOptions : foodOptions;
+
+  // ============================
+  // HANDLERS
+  // ============================
 
   const handleSelectionChange = (event, name) => {
     setFilters((prevFilters) => ({
@@ -60,10 +63,13 @@ export default function Filters({
     }));
   };
 
-
   const updateField = (type, value) => {
     setFilters({ ...filters, [type]: value });
   };
+
+  // ============================
+  // RENDER
+  // ============================
 
   return (
     <section className="filter">
@@ -74,7 +80,9 @@ export default function Filters({
             <p>Restaurants</p>
             <p>
               Sorted by{" "}
-              {filters.sort === "review" ? "Number of Reviews" : "Average Rating"}
+              {filters.sort === "review"
+                ? "Number of Reviews"
+                : "Average Rating"}
             </p>
           </div>
         </summary>
@@ -86,6 +94,7 @@ export default function Filters({
             e.target.parentNode.removeAttribute("open");
           }}
         >
+          {/* CATEGORY */}
           <div>
             <img src="/food.svg" alt="Category" />
             <label>
@@ -103,15 +112,12 @@ export default function Filters({
             </label>
           </div>
 
-          {/* 🔸 Country */}
+          {/* COUNTRY */}
           <div>
             <img src="/add.svg" alt="Country" />
             <label>
               Country
-              <select
-                value={filters.country}
-                onChange={handleCountryChange}
-              >
+              <select value={filters.country} onChange={handleCountryChange}>
                 {countryOptions.map((c, i) => (
                   <option key={i} value={c}>
                     {c === "" ? "Selecione opção" : c}
@@ -121,7 +127,7 @@ export default function Filters({
             </label>
           </div>
 
-          {/* 🔸 State */}
+          {/* STATE */}
           <div>
             <img src="/add.svg" alt="State" />
             <label>
@@ -140,7 +146,7 @@ export default function Filters({
             </label>
           </div>
 
-          {/* 🔸 City */}
+          {/* CITY */}
           <div>
             <img src="/location.svg" alt="City" />
             <label>
@@ -159,7 +165,7 @@ export default function Filters({
             </label>
           </div>
 
-          {/* 🔸 Sort */}
+          {/* SORT */}
           <div>
             <img src="/sortBy.svg" alt="Sort" />
             <label>
@@ -204,8 +210,8 @@ export default function Filters({
 
       <div className="tags">
         {Object.entries(filters).map(([type, value]) => {
-          if (type === "sort" || value === "") return null;
-          return (
+        if (type === "sort" || value === "") return null;
+        return (
             <Tag
               key={type + value}
               type={type}
@@ -218,3 +224,4 @@ export default function Filters({
     </section>
   );
 }
+

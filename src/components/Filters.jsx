@@ -16,7 +16,6 @@ export default function Filters({
 }) {
    // 🔹 Controle do tipo principal
   const [filterType, setFilterType] = useState("food");
-  const [categoryList, setCategoryList] = useState([]);
   const foodOptions = [
     "",
     "Pizza",

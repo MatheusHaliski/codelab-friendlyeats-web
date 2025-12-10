@@ -137,7 +137,7 @@ export default function Filters({
 
           {/* COUNTRY */}
           <div>
-            <img src="/add.svg" alt="Country" />
+            <img src="/category.svg" alt="Country" />
             <label>
               Country
               <select value={filters.country} onChange={handleCountryChange}>

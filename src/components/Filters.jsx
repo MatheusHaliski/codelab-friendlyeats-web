@@ -1,7 +1,7 @@
 "use client";
 
 import Tag from "@/src/components/Tag.jsx";
-import { useState, useEffect } from "react";
+
 export default function Filters({
   filters,
   setFilters,
@@ -14,10 +14,11 @@ export default function Filters({
     { value: "review", label: "Reviews" },
   ],
 }) {
-   // 🔹 Controle do tipo principal
-  const [filterType, setFilterType] = useState("food");
+
+
+  // 🔹 Opções específicas para cada tipo
   const foodOptions = [
-    "",
+
     "Pizza",
     "Burgers",
     "Coffee",
@@ -29,12 +30,8 @@ export default function Filters({
     "Seafood",
     "Desserts",
   ];
+
   useEffect(() => {
-    setCategoryList(filterType === "food" ? foodOptions : lifestyleOptions);
-  }, [filterType]);
-const lifestyleOptions = [
-    "", "Technology", "Hotel", "Education", "Travel", "Spa", "Car", "Pet", "Health"
-  ];
   const categoryList = categoryOptions?.length ? categoryOptions : foodOptions;
 
   const handleSelectionChange = (event, name) => {
@@ -62,11 +59,7 @@ const lifestyleOptions = [
       city: "",
     }));
   };
- const handleMainTypeChange = (e) => {
-    setFilterType(e.target.value);
-    // 🔸 Limpa o filtro de categoria ao mudar o tipo
-    setFilters((prev) => ({ ...prev, category: "" }));
-  };
+
 
   const updateField = (type, value) => {
     setFilters({ ...filters, [type]: value });
@@ -93,21 +86,7 @@ const lifestyleOptions = [
             e.target.parentNode.removeAttribute("open");
           }}
         >
-           {/* 🔸 Novo filtro principal */}
           <div>
-            <img src="/add.svg" alt="Main Type" />
-            <label>
-              Type
-              <select value={filterType} onChange={handleMainTypeChange}>
-                <option value="food">Food</option>
-                <option value="lifestyle">Lifestyle</option>
-              </select>
-            </label>
-          </div>
-
-          {/* 🔸 Filtro secundário (depende do tipo) */}
-          <div>
-            <img src={filterType === "food" ? "/food.svg" : "/lifestyle.svg"} alt="Category" />
             <img src="/food.svg" alt="Category" />
             <label>
               Category

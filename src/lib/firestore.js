@@ -15,6 +15,10 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@/src/lib/firebase/clientApp";
+import {
+  inferTypeFromCategories,
+  restaurantMatchesType,
+} from "@/src/lib/categoryKeywords";
 
 function resolveFirestoreInstance(possibleDb) {
   return possibleDb ?? db;
@@ -118,11 +122,17 @@ function applyQueryFilters(baseRef, { category, city, country, state, sort }) {
 }
 
 async function addTypeFieldIfMissing(querySnapshot, fallbackType) {
-  const typeValue = fallbackType === "lifestyle" ? "lifestyle" : "food";
-
   const updates = querySnapshot.docs
     .filter((docSnapshot) => !docSnapshot.data()?.type)
-    .map((docSnapshot) => updateDoc(docSnapshot.ref, { type: typeValue }));
+    .map((docSnapshot) => {
+      const data = docSnapshot.data();
+      const categories = Array.isArray(data.categories) ? data.categories : [];
+      const inferredType = inferTypeFromCategories(categories);
+      const typeValue =
+        inferredType ?? (fallbackType === "lifestyle" ? "lifestyle" : "food");
+
+      return updateDoc(docSnapshot.ref, { type: typeValue });
+    });
 
   if (updates.length) {
     await Promise.all(updates);
@@ -137,9 +147,8 @@ function resolveGetRestaurantsArgs(possibleDbOrFilters = {}, maybeFilters = {}) 
     : { database: db, filters: possibleDbOrFilters };
 }
 
-function getCollectionForType(database, type) {
-  const collectionName = type === "lifestyle" ? "lifestyle" : "restaurants";
-  return collection(database, collectionName);
+function getCollectionForType(database) {
+  return collection(database, "restaurants");
 }
 
 // 🔹 Retorna lista de restaurantes
@@ -154,15 +163,12 @@ export async function getRestaurants(possibleDbOrFilters = {}, maybeFilters = {}
     ...filters,
     type: filters.type ?? "food",
   });
-  try {
   const results = await getDocs(restaurantsQuery);
-  return results.docs.map(normalizeRestaurantSnapshot);
-} catch (error) {
-  console.error(error);
-}
   await addTypeFieldIfMissing(results, filters.type);
 
-  return results.docs.map(normalizeRestaurantSnapshot);
+  return results.docs
+    .map(normalizeRestaurantSnapshot)
+    .filter((restaurant) => restaurantMatchesType(restaurant, filters.type));
 }
 
 // 🔹 Escuta mudanças em tempo real
@@ -181,7 +187,9 @@ export function getRestaurantsSnapshot(cb, possibleDbOrFilters = {}, maybeFilter
   return onSnapshot(restaurantsQuery, (querySnapshot) => {
     addTypeFieldIfMissing(querySnapshot, filters.type).catch(console.error);
 
-    const results = querySnapshot.docs.map(normalizeRestaurantSnapshot);
+    const results = querySnapshot.docs
+      .map(normalizeRestaurantSnapshot)
+      .filter((restaurant) => restaurantMatchesType(restaurant, filters.type));
     cb(results);
   });
 }
@@ -237,7 +245,9 @@ export async function getRestaurantById(possibleDbOrId, maybeRestaurantId) {
         const address = data.address ?? data.address;
         const state = data.state ?? "";
         const country = data.country ?? "";
-        const type = data.type ??
+        const inferredType = inferTypeFromCategories(categories);
+        const type =
+          data.type ?? inferredType ??
           (docSnapshot.ref.parent.id === "lifestyle" ? "lifestyle" : "food");
         return {
           id: docSnapshot.id,

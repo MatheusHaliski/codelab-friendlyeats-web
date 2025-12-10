@@ -154,7 +154,12 @@ export async function getRestaurants(possibleDbOrFilters = {}, maybeFilters = {}
     ...filters,
     type: filters.type ?? "food",
   });
+  try {
   const results = await getDocs(restaurantsQuery);
+  return results.docs.map(normalizeRestaurantSnapshot);
+} catch (error) {
+  console.error(error);
+}
   await addTypeFieldIfMissing(results, filters.type);
 
   return results.docs.map(normalizeRestaurantSnapshot);

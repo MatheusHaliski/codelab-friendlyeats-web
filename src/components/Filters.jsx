@@ -103,12 +103,12 @@ export default function Filters({
   // ----------------------------------------
   // FINAL CATEGORY LIST – AGORA COM OPÇÃO EM BRANCO PARA LIFESTYLE
   // ----------------------------------------
-  const finalCategoryList =
-    filteredCategoryList.length
-      ? filteredCategoryList
-      : filters.type === "lifestyle"
-        ? ["", ...lifestyleKeywords.map(capitalize)]   //  ⬅️ opção vazia no topo
-        : ["", ...foodKeywords.map(capitalize)];       //  ⬅️ também adiciono no food para consistência
+const finalCategoryList =
+  filteredCategoryList.length
+    ? ["", ...filteredCategoryList] // adiciona All Categories no topo
+    : filters.type === "lifestyle"
+      ? ["", ...lifestyleKeywords.map(capitalize)]   // sempre começa com All Categories
+      : ["", ...foodKeywords.map(capitalize)];
 
   // ----------------------------------------
   // HANDLERS

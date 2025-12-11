@@ -151,7 +151,6 @@ function getCollectionForType(database, type) {
   const collectionName = type === "lifestyle" ? "lifestyle" : "restaurants";
   return collection(database, collectionName);
 }
-
 // 🔹 Retorna lista de restaurantes
 export async function getRestaurants(possibleDbOrFilters = {}, maybeFilters = {}) {
   const { database, filters } = resolveGetRestaurantsArgs(

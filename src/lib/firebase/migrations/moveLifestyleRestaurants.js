@@ -175,7 +175,7 @@ function hasFoodCategory(categories = []) {
 
 /**
  * Moves restaurants that contain FOOD keywords
- * from "lifestyle" → "restaurants"
+ * from "lifestyle" → "restaurants", and also updates type → "food".
  */
 export async function moveFoodBackToRestaurants(db) {
   const lifestyleRef = collection(db, "lifestyle");
@@ -190,11 +190,17 @@ export async function moveFoodBackToRestaurants(db) {
     const categories = data.categories || [];
 
     if (hasFoodCategory(categories)) {
+      
+      const updatedData = {
+        ...data,
+        type: "food",  // 🔥 Define o tipo correto
+      };
+
       // NEW location
       const newRef = doc(db, "restaurants", docSnap.id);
 
-      batch.set(newRef, data);   // copy back
-      batch.delete(docSnap.ref); // remove from lifestyle
+      batch.set(newRef, updatedData);  // copy + update type
+      batch.delete(docSnap.ref);       // remove from lifestyle
     }
   });
 

@@ -5,6 +5,11 @@ import {
   doc,
 } from "firebase/firestore";
 
+
+
+const specifickeyworkds =
+  ["bar","bars"]
+
 const lifestyleKeywords  = [
   "life",
   "education",
@@ -130,7 +135,7 @@ function hasLifestyleCategory(categories = []) {
 
   return categories.some((cat) => {
     const lower = cat.toLowerCase();
-    return lifestyleKeywords.some((kw) => lower.includes(kw));
+    return specifickeyworkds.some((kw) => lower.includes(kw));
   });
 }
 

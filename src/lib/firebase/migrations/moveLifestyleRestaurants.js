@@ -115,6 +115,13 @@ const lifestyleKeywords  = [
   "banks",
 ];
 
+const keywordsfix = [
+"restaurants", "sandwiches", "puerto rican","caribbean","ethnic food","greek","food","latin american","french","breakfast & brunch","specialty food","juice bars & smoothies","italian","burguers","puerto rican","pizza","mexican","ice cream & frozen yogurt","cuban","bagels",
+  "ethnic food","american(new)","american(traditional)","food delivery services","chicken wings","cheese shops","macarons","pasta shops","pizza","filipino","specialty food","seafood","irish","vegetarian","vietnamese","indian"
+]
+
+
+
 /**
  * Returns true if any category matches at least one lifestyle keyword.
  */
@@ -149,6 +156,45 @@ export async function moveLifestyleRestaurants(db) {
 
       batch.set(newRef, data);   // copy
       batch.delete(docSnap.ref); // delete original
+    }
+  });
+
+  await batch.commit();
+}
+/**
+ * Returns true if any category matches at least one FOOD keyword (keywordsfix).
+ */
+function hasFoodCategory(categories = []) {
+  if (!Array.isArray(categories)) return false;
+
+  return categories.some((cat) => {
+    const lower = cat.toLowerCase();
+    return keywordsfix.some((kw) => lower.includes(kw.toLowerCase()));
+  });
+}
+
+/**
+ * Moves restaurants that contain FOOD keywords
+ * from "lifestyle" → "restaurants"
+ */
+export async function moveFoodBackToRestaurants(db) {
+  const lifestyleRef = collection(db, "lifestyle");
+  const snapshot = await getDocs(lifestyleRef);
+
+  if (snapshot.empty) return;
+
+  const batch = writeBatch(db);
+
+  snapshot.docs.forEach((docSnap) => {
+    const data = docSnap.data();
+    const categories = data.categories || [];
+
+    if (hasFoodCategory(categories)) {
+      // NEW location
+      const newRef = doc(db, "restaurants", docSnap.id);
+
+      batch.set(newRef, data);   // copy back
+      batch.delete(docSnap.ref); // remove from lifestyle
     }
   });
 

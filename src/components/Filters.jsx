@@ -90,7 +90,7 @@ export default function Filters({
       ? ["", ...filteredCategoryList]
       : filters.type === "lifestyle"
       ? ["", ...lifestyleKeywords.map(capitalize)]
-      : ["", ...foodKeywords.map(capitalize)];
+      : [ ...foodKeywords.map(capitalize)];
 
   const handleSelection = (e, field) => {
     setFilters((prev) => ({

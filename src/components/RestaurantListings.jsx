@@ -1,29 +1,20 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { React, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
 import renderStars from "@/src/components/Stars.jsx";
 import { getRestaurantsSnapshot } from "@/src/lib/firebase/firestore.js";
 import Filters from "@/src/components/Filters.jsx";
 
+// Fallback global
 const FALLBACK_IMAGE =
   "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
 
-const RestaurantItem = ({ restaurant }) => (
-  <li key={restaurant.id}>
-    <Link href={`/restaurant/${restaurant.id}`}>
-      <ActiveResturant restaurant={restaurant} />
-    </Link>
-  </li>
-);
-
-const ActiveResturant = ({ restaurant }) => (
-  <div>
-    <ImageCover photo={restaurant.photo} name={restaurant.name} />
-    <ResturantDetails restaurant={restaurant} />
-  </div>
-);
+// ------------------------------
+// SUBCOMPONENTES
+// ------------------------------
 
 const ImageCover = ({ photo, name }) => {
   const imageSrc = photo || FALLBACK_IMAGE;
@@ -41,14 +32,6 @@ const ImageCover = ({ photo, name }) => {
   );
 };
 
-const ResturantDetails = ({ restaurant }) => (
-  <div className="restaurant__details">
-    <h2>{restaurant.name}</h2>
-    <RestaurantRating restaurant={restaurant} />
-    <RestaurantMetadata restaurant={restaurant} />
-  </div>
-);
-
 const RestaurantRating = ({ restaurant }) => (
   <div className="restaurant__rating">
     <ul>{renderStars(restaurant.avgRating)}</ul>
@@ -64,6 +47,33 @@ const RestaurantMetadata = ({ restaurant }) => (
   </div>
 );
 
+const RestaurantDetails = ({ restaurant }) => (
+  <div className="restaurant__details">
+    <h2>{restaurant.name}</h2>
+    <RestaurantRating restaurant={restaurant} />
+    <RestaurantMetadata restaurant={restaurant} />
+  </div>
+);
+
+const ActiveRestaurant = ({ restaurant }) => (
+  <div>
+    <ImageCover photo={restaurant.photo} name={restaurant.name} />
+    <RestaurantDetails restaurant={restaurant} />
+  </div>
+);
+
+const RestaurantItem = ({ restaurant }) => (
+  <li key={restaurant.id}>
+    <Link href={`/restaurant/${restaurant.id}`}>
+      <ActiveRestaurant restaurant={restaurant} />
+    </Link>
+  </li>
+);
+
+// ------------------------------
+// COMPONENTE PRINCIPAL
+// ------------------------------
+
 export default function RestaurantListings({ initialRestaurants, searchParams }) {
   const router = useRouter();
 
@@ -71,7 +81,7 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
     city: searchParams.city || "",
     category: searchParams.category || "",
     country: searchParams.country || "",
-     name: searchParams.name || "",
+    name: searchParams.name || "",
     state: searchParams.state || "",
     type: searchParams.type || "food",
     sort: searchParams.sort || "rating",
@@ -81,6 +91,9 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
   const [allRestaurants, setAllRestaurants] = useState(initialRestaurants);
   const [filters, setFilters] = useState(initialFilters);
 
+  // ------------------------------
+  // OPTIONS DE CATEGORIA
+  // ------------------------------
   const categoryOptions = [
     "",
     ...Array.from(
@@ -90,16 +103,15 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
             if (category) acc.add(category);
           });
         }
-
-        if (restaurant.category) {
-          acc.add(restaurant.category);
-        }
-
+        if (restaurant.category) acc.add(restaurant.category);
         return acc;
       }, new Set())
     ).sort(),
   ];
 
+  // ------------------------------
+  // AGRUPAMENTO POR PAÍS → ESTADO → CIDADE
+  // ------------------------------
   const locationOptions = allRestaurants.reduce((acc, restaurant) => {
     const country = restaurant.country || "";
     const state = restaurant.state || "";
@@ -119,31 +131,43 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
   ];
   const cityOptions = [
     "",
-    ...Array.from(
-      locationOptions[filters.country]?.[filters.state] || new Set()
-    ).sort(),
+    ...Array.from(locationOptions[filters.country]?.[filters.state] || new Set()).sort(),
   ];
 
+  // ------------------------------
+  // Atualiza URL com filtros
+  // ------------------------------
   useEffect(() => {
-    routerWithFilters(router, filters);
-  }, [router, filters]);
-
-  useEffect(() => {
-    return getRestaurantsSnapshot(
-      (data) => {
-        setRestaurants(data);
-      },
-      filters
-    );
+    const queryParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== "") queryParams.append(key, value);
+    }
+    router.push(`?${queryParams.toString()}`);
   }, [filters]);
 
+  // ------------------------------
+  // Firestore: Lista filtrada
+  // ------------------------------
   useEffect(() => {
-    const unsubscribe = getRestaurantsSnapshot((data) => {
-      setAllRestaurants(data);
-    }, { type: filters.type });
+    return getRestaurantsSnapshot((data) => {
+      setRestaurants(data);
+    }, filters);
+  }, [filters]);
 
-    return unsubscribe;
+  // ------------------------------
+  // Firestore: Todas categorias (para montar selects)
+  // ------------------------------
+  useEffect(() => {
+    const unsub = getRestaurantsSnapshot(
+      (data) => setAllRestaurants(data),
+      { type: filters.type }
+    );
+    return unsub;
   }, [filters.type]);
+
+  // ------------------------------
+  // RENDER
+  // ------------------------------
 
   return (
     <article>
@@ -151,9 +175,9 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
         filters={filters}
         setFilters={setFilters}
         categoryOptions={categoryOptions}
-        cityOptions={cityOptions}
         countryOptions={countryOptions}
         stateOptions={stateOptions}
+        cityOptions={cityOptions}
       />
 
       <ul className="restaurants">
@@ -162,6 +186,7 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
             if (filters.sort === "review") return b.numRatings - a.numRatings;
             return b.avgRating - a.avgRating;
           })
+
           .filter((r) => {
             const matchCity = !filters.city || r.city === filters.city;
             const matchCategory =
@@ -169,33 +194,20 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
               (Array.isArray(r.categories)
                 ? r.categories.includes(filters.category)
                 : r.category === filters.category);
-            const matchCountry =
-              !filters.country || r.country === filters.country;
+
+            const matchCountry = !filters.country || r.country === filters.country;
+            const matchState = !filters.state || r.state === filters.state;
             const matchName =
               !filters.name ||
               r.name?.toLowerCase().includes(filters.name.toLowerCase());
-            const matchState = !filters.state || r.state === filters.state;
 
-          return matchCity && matchCategory && matchCountry && matchName && matchState;
-
+            return matchCity && matchCategory && matchCountry && matchName && matchState;
           })
+
           .map((restaurant) => (
             <RestaurantItem key={restaurant.id} restaurant={restaurant} />
           ))}
       </ul>
     </article>
   );
-}
-
-function routerWithFilters(router, filters) {
-  const queryParams = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(filters)) {
-    if (value !== undefined && value !== "") {
-      queryParams.append(key, value);
-    }
-  }
-
-  const queryString = queryParams.toString();
-  router.push(`?${queryString}`);
 }

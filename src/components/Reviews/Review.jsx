@@ -1,10 +1,18 @@
 import renderStars from "@/src/components/Stars.jsx";
 
-export function Review({ rating, text, timestamp }) {
+export function Review({ grade, comment, email, timestamp }) {
   return (
     <li className="review__item">
-      <ul className="restaurant__rating">{renderStars(rating)}</ul>
-      <p>{text}</p>
+      <div className="review__row">
+        <div className="review__score">
+          <ul className="restaurant__rating">{renderStars(grade)}</ul>
+          <span className="review__grade">{grade?.toFixed?.(1) ?? grade}/5</span>
+        </div>
+        <div className="review__content">
+          <p className="review__email">{email}</p>
+          <p>{comment}</p>
+        </div>
+      </div>
 
       <time>
         {new Intl.DateTimeFormat("en-GB", {

@@ -51,13 +51,15 @@ function resolveFirestoreInstance(possibleDb) {
     const currentAverageRating = data.stars ?? data.avgRating ?? 0;
 
     const updatedReviewCount = currentReviewCount + 1;
+    const gradeValue = Number(review.grade ?? review.rating ?? 0);
+
     const updatedAverageRating =
       updatedReviewCount > 0
-        ? (currentAverageRating * currentReviewCount + review.rating) /
-        updatedReviewCount
+        ? (currentAverageRating * currentReviewCount + gradeValue) /
+          updatedReviewCount
         : 0;
 
-    transaction.set(newRatingDocument, review);
+    transaction.set(newRatingDocument, { ...review, grade: gradeValue, rating: gradeValue });
     transaction.update(docRef, {
       review_count: updatedReviewCount,
       stars: updatedAverageRating,
@@ -78,22 +80,21 @@ function resolveFirestoreInstance(possibleDb) {
         : maybeRestaurantId;
       const review = isRestaurantIdFirstArg ? maybeRestaurantId : maybeReview;
 
+      const numericGrade = Number(review?.grade ?? review?.rating ?? NaN);
+
       if (!restaurantId) throw new Error("A restaurantId is required");
-      if (!review || typeof review.rating !== "number")
+      if (!review || Number.isNaN(numericGrade))
         throw new Error("A numeric rating is required");
 
       const restaurantRef = doc(database, "restaurants", restaurantId);
-      const ratingsCollection = collection(
-        database,
-        "restaurants",
-        restaurantId,
-        "ratings"
-      );
+      const ratingsCollection = collection(database, "review");
       const newRatingDocument = doc(ratingsCollection);
 
       const reviewWithMetadata = {
         ...review,
-        rating: Number(review.rating),
+        restaurantId,
+        grade: numericGrade,
+        rating: numericGrade,
         timestamp: Timestamp.now(),
       };
 
@@ -268,19 +269,33 @@ export async function getRestaurantById(possibleDbOrId, maybeRestaurantId) {
       }
 
 // 🔹 Busca reviews de um restaurante
-      export async function getReviewsByRestaurantId(restaurantId) {
+      export async function getReviewsByRestaurantId(
+        possibleDbOrRestaurantId,
+        maybeRestaurantId
+      ) {
+        const looksLikeFirestore = Boolean(possibleDbOrRestaurantId?._databaseId);
+        const database = looksLikeFirestore ? possibleDbOrRestaurantId : db;
+        const restaurantId = looksLikeFirestore
+          ? maybeRestaurantId
+          : possibleDbOrRestaurantId;
+
         if (!restaurantId) return [];
         const q = query(
-          collection(db, "restaurants", restaurantId, "ratings"),
+          collection(database, "review"),
+          where("restaurantId", "==", restaurantId),
           orderBy("timestamp", "desc")
         );
         const results = await getDocs(q);
 
-        return results.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp.toDate(),
-        }));
+        return results.docs.map((docSnapshot) => {
+          const data = docSnapshot.data();
+          return {
+            id: docSnapshot.id,
+            ...data,
+            grade: data.grade ?? data.rating ?? 0,
+            timestamp: data.timestamp.toDate(),
+          };
+        });
       }
 
 // 🔹 Escuta reviews em tempo real
@@ -293,7 +308,8 @@ export function getReviewsSnapshotByRestaurantId(
 
   const database = resolveFirestoreInstance(firestoreInstance);
   const reviewsQuery = query(
-    collection(database, "restaurants", restaurantId, "ratings"),
+    collection(database, "review"),
+    where("restaurantId", "==", restaurantId),
     orderBy("timestamp", "desc")
   );
 
@@ -304,6 +320,7 @@ export function getReviewsSnapshotByRestaurantId(
       return {
         id: docSnapshot.id,
         ...data,
+        grade: data.grade ?? data.rating ?? 0,
         timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : data.timestamp,
       };
     });

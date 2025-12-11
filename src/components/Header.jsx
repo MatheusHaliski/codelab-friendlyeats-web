@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   signInWithGoogle,
@@ -9,7 +9,31 @@ import {
 import { setCookie, deleteCookie } from "cookies-next";
 
 function useUserSession(initialUser) {
-  return;
+  const [user, setUser] = useState(initialUser ?? null);
+
+  useEffect(() => {
+    const unsubscribe = onIdTokenChanged((firebaseUser) => {
+      if (!firebaseUser) {
+        deleteCookie("token");
+        setUser(null);
+        return;
+      }
+
+      (async () => {
+        const token = await firebaseUser.getIdToken();
+        setCookie("token", token);
+        setUser(firebaseUser.toJSON ? firebaseUser.toJSON() : firebaseUser);
+      })();
+    });
+
+    return () => {
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    };
+  }, []);
+
+  return user;
 }
 
 export default function Header({ initialUser }) {

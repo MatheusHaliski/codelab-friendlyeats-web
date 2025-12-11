@@ -147,6 +147,7 @@ export default function Filters({
               Name
               <input
                 type="text"
+                style={{ height: "75px" }}
                 value={filters.name}
                 onChange={handleNameChange}
                 placeholder="Search by name"

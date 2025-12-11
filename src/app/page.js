@@ -14,8 +14,9 @@ export default async function Home(props) {
   const db = getFirestore(firebaseServerApp);
 
   // 🧠 IMPORTANTÍSSIMO:
-  // Antes de listar restaurantes → mover docs lifestyle
-  const restaurants = await  moveFoodBackToRestaurants(db)
+  // Executa migração ANTES de carregar os restaurantes
+  await moveFoodBackToRestaurants(db);
+
   const normalizedFilters = {
     ...searchParams,
     type: searchParams.type || "food",

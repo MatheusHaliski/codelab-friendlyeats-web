@@ -32,9 +32,20 @@ export default function Restaurant({
 
   useEffect(() => {
     return getRestaurantSnapshotById(id, (data) => {
-      setRestaurantDetails(data);
+      setRestaurantDetails(data ?? null);
     });
   }, [id]);
+
+  if (!restaurantDetails) {
+    return (
+      <section className="restaurant-hero">
+        <div className="restaurant-hero__body">
+          <h1>Restaurant not found</h1>
+          <p>The restaurant you&apos;re looking for doesn&apos;t exist anymore.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>

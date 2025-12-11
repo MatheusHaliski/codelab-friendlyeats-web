@@ -13,6 +13,7 @@ import {
   GeminiSummarySkeleton,
 } from "@/src/components/Reviews/ReviewSummary";
 import { getFirestore } from "firebase/firestore";
+import { notFound } from "next/navigation";
 
 export default async function Home(props) {
   // This is a server component, we can access URL
@@ -25,6 +26,10 @@ export default async function Home(props) {
     getFirestore(firebaseServerApp),
     params.id
   );
+
+  if (!restaurant) {
+    notFound();
+  }
 
   return (
     <main className="main__restaurant">

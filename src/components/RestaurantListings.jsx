@@ -176,7 +176,8 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
               r.name?.toLowerCase().includes(filters.name.toLowerCase());
             const matchState = !filters.state || r.state === filters.state;
 
-            return matchCity && matchCategory && matchCountry &&  && matchName  && matchState;
+          return matchCity && matchCategory && matchCountry && matchName && matchState;
+
           })
           .map((restaurant) => (
             <RestaurantItem key={restaurant.id} restaurant={restaurant} />

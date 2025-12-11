@@ -15,8 +15,8 @@ export default async function Home(props) {
 
   // 🧠 IMPORTANTÍSSIMO:
   // Antes de listar restaurantes → mover docs lifestyle
-  await moveLifestyleRestaurants(db);
-  await fixLifestyleTypeField(db);
+  //await moveLifestyleRestaurants(db);
+  //await fixLifestyleTypeField(db);
   const normalizedFilters = {
     ...searchParams,
     type: searchParams.type || "food",

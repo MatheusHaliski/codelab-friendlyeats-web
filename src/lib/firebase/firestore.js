@@ -328,3 +328,27 @@ export function getReviewsSnapshotByRestaurantId(
     cb(results);
   });
 }
+
+// Legacy helpers kept for backwards compatibility with older imports
+export function getReviewsSnapshot(
+  possibleDbOrRestaurantId,
+  maybeRestaurantId,
+  maybeCb
+) {
+  const looksLikeFirestore = Boolean(possibleDbOrRestaurantId?._databaseId);
+  const database = looksLikeFirestore ? possibleDbOrRestaurantId : undefined;
+  const restaurantId = looksLikeFirestore
+    ? maybeRestaurantId
+    : possibleDbOrRestaurantId;
+  const callback = looksLikeFirestore ? maybeCb : maybeRestaurantId;
+
+  return getReviewsSnapshotByRestaurantId(restaurantId, callback, database);
+}
+
+export function addReview(restaurantId, review, firestoreInstance) {
+  return addReviewToRestaurant(
+    firestoreInstance ?? undefined,
+    restaurantId,
+    review
+  );
+}

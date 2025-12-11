@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import renderStars from "@/src/components/Stars.jsx";
-import { addReview, getReviewsSnapshot } from "@/src/lib/firebase/firestore.js";
+import { addReview, getReviewsSnapshotByRestaurantId } from "@/src/lib/firebase/firestore.js";
 import { updateRestaurantImage } from "@/src/lib/firebase/storage.js";
 
 const FALLBACK_IMAGE =
@@ -18,7 +18,7 @@ export default function RestaurantProfile({ restaurant, userId }) {
   // Load reviews in real-time
   // -------------------------
   useEffect(() => {
-    return getReviewsSnapshot(restaurant.id, (data) => {
+    return getReviewsSnapshotByRestaurantId(restaurant.id, (data) => {
       setReviews(data);
     });
   }, [restaurant.id]);

@@ -71,6 +71,7 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
     city: searchParams.city || "",
     category: searchParams.category || "",
     country: searchParams.country || "",
+     name: searchParams.name || "",
     state: searchParams.state || "",
     type: searchParams.type || "food",
     sort: searchParams.sort || "rating",
@@ -170,9 +171,12 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
                 : r.category === filters.category);
             const matchCountry =
               !filters.country || r.country === filters.country;
+            const matchName =
+              !filters.name ||
+              r.name?.toLowerCase().includes(filters.name.toLowerCase());
             const matchState = !filters.state || r.state === filters.state;
 
-            return matchCity && matchCategory && matchCountry && matchState;
+            return matchCity && matchCategory && matchCountry &&  && matchName  && matchState;
           })
           .map((restaurant) => (
             <RestaurantItem key={restaurant.id} restaurant={restaurant} />

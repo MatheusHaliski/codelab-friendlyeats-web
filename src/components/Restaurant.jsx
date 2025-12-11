@@ -8,7 +8,7 @@ import { getRestaurantSnapshotById } from "@/src/lib/firebase/firestore.js";
 import { useUser } from "@/src/lib/getUser";
 import RestaurantDetails from "@/src/components/RestaurantDetails.jsx";
 import { updateRestaurantImage } from "@/src/lib/firebase/storage.js";
-
+import RestaurantProfile from "@/src/components/RestaurantProfile.jsx";
 export default function Restaurant({
   id,
   initialRestaurant,
@@ -47,15 +47,10 @@ export default function Restaurant({
     );
   }
 
-  return (
-    <>
-      <RestaurantDetails
-        restaurant={restaurantDetails}
-        userId={userId}
-        handleRestaurantImage={handleRestaurantImage}
-      >
-        {children}
-      </RestaurantDetails>
-    </>
-  );
+ return (
+  <RestaurantProfile
+    restaurant={restaurantDetails}
+    userId={userId}
+  />
+);
 }

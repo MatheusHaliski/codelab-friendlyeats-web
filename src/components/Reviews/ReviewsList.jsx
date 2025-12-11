@@ -7,7 +7,7 @@ import { ReviewSkeleton } from "@/src/components/Reviews/Review";
 import { getFirestore } from "firebase/firestore";
 import { getAuthenticatedAppForUser } from "@/src/lib/firebase/serverApp";
 
-export default async function ReviewsList({ restaurantId, userId }) {
+export default async function ReviewsList({ restaurantId }) {
   const { firebaseServerApp } = await getAuthenticatedAppForUser();
   const reviews = await getReviewsByRestaurantId(
     getFirestore(firebaseServerApp),
@@ -18,7 +18,6 @@ export default async function ReviewsList({ restaurantId, userId }) {
     <ReviewsListClient
       initialReviews={reviews}
       restaurantId={restaurantId}
-      userId={userId}
     />
   );
 }

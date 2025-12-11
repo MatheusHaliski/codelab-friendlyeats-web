@@ -40,7 +40,7 @@ export default async function Home(props) {
       <Suspense
         fallback={<ReviewsListSkeleton numReviews={restaurant.numRatings} />}
       >
-        <ReviewsList restaurantId={params.id} userId={currentUser?.uid || ""} />
+        <ReviewsList restaurantId={params.id} />
       </Suspense>
     </main>
   );

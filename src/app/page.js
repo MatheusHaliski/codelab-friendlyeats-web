@@ -13,8 +13,6 @@ export default async function Home(props) {
   const { firebaseServerApp } = await getAuthenticatedAppForUser();
   const db = getFirestore(firebaseServerApp);
 
-  await migrateLifestyleRestaurants();
-
   const normalizedFilters = {
     ...searchParams,
     type: searchParams.type || "food",

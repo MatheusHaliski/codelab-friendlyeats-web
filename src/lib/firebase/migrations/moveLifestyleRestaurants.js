@@ -125,7 +125,41 @@ const keywordsfix = [
   "ethnic food","american(new)","american(traditional)","food delivery services","chicken wings","cheese shops","macarons","pasta shops","pizza","filipino","specialty food","seafood","irish","vegetarian","vietnamese","indian"
 ]
 
+export async function migrateLifestyleRestaurants() {
+  const restaurantsRef = collection(db, "restaurants");
+  const snapshot = await getDocs(restaurantsRef);
 
+  if (snapshot.empty) {
+    console.log("Nenhum documento encontrado na coleção restaurants.");
+    return;
+  }
+
+  console.log(`Verificando ${snapshot.docs.length} documentos...`);
+
+  for (const docSnap of snapshot.docs) {
+    const data = docSnap.data();
+    const id = docSnap.id;
+
+    // Só move se o campo existir E for lifestyle
+    if (data.type !== "lifestyle") {
+      console.log(`Ignorando ${id} (type = ${data.type})`);
+      continue;
+    }
+
+    const lifestyleRef = doc(db, "lifestyle", id);
+
+    console.log(`Movendo ${id} → coleção lifestyle...`);
+
+    // Copia o documento inteiro
+    await setDoc(lifestyleRef, data);
+
+    // Opcional: deletar da coleção "restaurants"
+    // ❗ Atenção: isso remove o doc original permanentemente
+    await deleteDoc(doc(db, "restaurants", id));
+  }
+
+  console.log("Migração concluída!");
+}
 
 /**
  * Returns true if any category matches at least one lifestyle keyword.

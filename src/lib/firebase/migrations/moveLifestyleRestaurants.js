@@ -121,7 +121,7 @@ const lifestyleKeywords  = [
 ];
 
 const keywordsfix = [
-"restaurants", "sandwiches", "puerto rican","caribbean","ethnic food","greek","food","latin american","french","breakfast & brunch","specialty food","juice bars & smoothies","italian","burguers","puerto rican","pizza","mexican","ice cream & frozen yogurt","cuban","bagels",
+  "restaurants", "sandwiches", "puerto rican","caribbean","ethnic food","greek","food","latin american","french","breakfast & brunch","specialty food","juice bars & smoothies","italian","burguers","puerto rican","pizza","mexican","ice cream & frozen yogurt","cuban","bagels",
   "ethnic food","american(new)","american(traditional)","food delivery services","chicken wings","cheese shops","macarons","pasta shops","pizza","filipino","specialty food","seafood","irish","vegetarian","vietnamese","indian"
 ]
 
@@ -142,7 +142,7 @@ function hasLifestyleCategory(categories = []) {
 /**
  * Moves restaurants that contain lifestyle keywords
  * from "restaurants" → "lifestyle"
- 
+
  */
 export async function moveLifestyleRestaurants(db) {
   const restaurantsRef = collection(db, "restaurants");
@@ -196,7 +196,7 @@ export async function moveFoodBackToRestaurants(db) {
     const categories = data.categories || [];
 
     if (hasFoodCategory(categories)) {
-      
+
       const updatedData = {
         ...data,
         type: "food",  // 🔥 Define o tipo correto

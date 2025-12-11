@@ -3,9 +3,9 @@
 import { useMemo } from "react";
 import Tag from "@/src/components/Tag.jsx";
 
-// ----------------------------------------
-// 🔥 LISTAS
-// ----------------------------------------
+// ----------------------------------------------
+// LISTAS KEYWORDS
+// ----------------------------------------------
 
 const lifestyleKeywords = [
   "life","education","entertainment","parks","appliances","arcade","crafts",
@@ -43,91 +43,70 @@ const foodKeywords = [
   "delis","dinners","czech","himalayan","nepalese","fusion","caterers"
 ];
 
-export default function Filters({
-                                  filters,
-                                  setFilters,
-                                  categoryOptions = [""],
-                                  cityOptions = [""],
-                                  countryOptions = ["USA", "Canada", "UK"],
-                                  stateOptions = [""],
-                                  sortOptions = [
-                                    { value: "rating", label: "Rating" },
-                                    { value: "review", label: "Reviews" },
-                                  ],
-                                }) {
+// ----------------------------------------------
 
+export default function Filters({
+  filters,
+  setFilters,
+  categoryOptions = [""],
+  cityOptions = [""],
+  stateOptions = [""],
+  countryOptions = [""],
+  sortOptions = [
+    { value: "rating", label: "Rating" },
+    { value: "review", label: "Reviews" },
+  ],
+}) {
   const typeOptions = [
     { value: "food", label: "Food" },
     { value: "lifestyle", label: "Lifestyle" },
   ];
 
-  // ----------------------------------------
-  // Função uppercase
-  // ----------------------------------------
   function capitalize(str) {
     return str
       .split(" ")
-      .map(word =>
-        word.length > 0
-          ? word[0].toUpperCase() + word.slice(1).toLowerCase()
-          : word
-      )
+      .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
       .join(" ");
   }
 
-  // ----------------------------------------
-  // CLASSIFICAÇÃO
-  // ----------------------------------------
   function classifyCategory(cat) {
     if (!cat) return "food";
     const key = cat.toLowerCase();
-
-    if (foodKeywords.some(k => key.includes(k))) return "food";
-    if (lifestyleKeywords.some(k => key.includes(k))) return "lifestyle";
-
+    if (foodKeywords.some((k) => key.includes(k))) return "food";
+    if (lifestyleKeywords.some((k) => key.includes(k))) return "lifestyle";
     return "food";
   }
 
-  // ----------------------------------------
-  // FILTRAGEM DO SELECT PELO TYPE
-  // ----------------------------------------
+  // Filtrando lista por type detectado
   const filteredCategoryList = useMemo(() => {
     if (!categoryOptions?.length) return [];
-
-    return categoryOptions.filter((cat) => {
-      const detectedType = classifyCategory(cat);
-      return detectedType === (filters.type || "food");
-    });
+    return categoryOptions.filter(
+      (c) => classifyCategory(c) === (filters.type || "food")
+    );
   }, [categoryOptions, filters.type]);
 
-  // ----------------------------------------
-  // FINAL CATEGORY LIST – AGORA COM OPÇÃO EM BRANCO PARA LIFESTYLE
-  // ----------------------------------------
-const finalCategoryList =
-  filteredCategoryList.length
-    ? ["", ...filteredCategoryList] // adiciona All Categories no topo
-    : filters.type === "lifestyle"
-      ? ["", ...lifestyleKeywords.map(capitalize)]   // sempre começa com All Categories
+  const finalCategoryList =
+    filteredCategoryList.length
+      ? ["", ...filteredCategoryList]
+      : filters.type === "lifestyle"
+      ? ["", ...lifestyleKeywords.map(capitalize)]
       : ["", ...foodKeywords.map(capitalize)];
 
-  // ----------------------------------------
-  // HANDLERS
-  // ----------------------------------------
-  const handleSelectionChange = (event, name) => {
+  const handleSelection = (e, field) => {
     setFilters((prev) => ({
       ...prev,
-      [name]: event.target.value,
-      ...(name === "type" ? { category: "" } : {}),
+      [field]: e.target.value,
+      ...(field === "type" ? { category: "" } : {}),
     }));
   };
- const handleNameChange = (event) => {
-    const name = event.target.value;
+
+  const handleNameChange = (e) =>
     setFilters((prev) => ({
       ...prev,
-      name,
+      name: e.target.value,
     }));
-  };
-  const handleCountryChange = (e) =>
+
+  const handleCountry = (e) =>
     setFilters((prev) => ({
       ...prev,
       country: e.target.value,
@@ -135,19 +114,15 @@ const finalCategoryList =
       city: "",
     }));
 
-  const handleStateChange = (e) =>
+  const handleState = (e) =>
     setFilters((prev) => ({
       ...prev,
       state: e.target.value,
       city: "",
     }));
 
-  const updateField = (type, value) =>
-    setFilters({ ...filters, [type]: value });
-
-  // ----------------------------------------
-  // RENDER
-  // ----------------------------------------
+  const updateField = (key, val) =>
+    setFilters((prev) => ({ ...prev, [key]: val }));
 
   return (
     <section className="filter">
@@ -157,14 +132,16 @@ const finalCategoryList =
           <div>
             <p>Restaurants</p>
             <p>
-              Sorted by
+              Sorted by{" "}
               {filters.sort === "review" ? "Number of Reviews" : "Average Rating"}
             </p>
           </div>
         </summary>
 
+        {/* FORM */}
         <form method="GET">
-{/* NAME */}
+
+          {/* NAME */}
           <div>
             <label>
               Name
@@ -176,13 +153,14 @@ const finalCategoryList =
               />
             </label>
           </div>
+
           {/* TYPE */}
           <div>
             <label>
               Type
               <select
                 value={filters.type}
-                onChange={(e) => handleSelectionChange(e, "type")}
+                onChange={(e) => handleSelection(e, "type")}
               >
                 {typeOptions.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -199,7 +177,7 @@ const finalCategoryList =
               Category
               <select
                 value={filters.category}
-                onChange={(e) => handleSelectionChange(e, "category")}
+                onChange={(e) => handleSelection(e, "category")}
               >
                 {finalCategoryList.map((cat, i) => (
                   <option key={i} value={cat}>
@@ -214,7 +192,7 @@ const finalCategoryList =
           <div>
             <label>
               Country
-              <select value={filters.country} onChange={handleCountryChange}>
+              <select value={filters.country} onChange={handleCountry}>
                 {countryOptions.map((c, i) => (
                   <option key={i} value={c}>
                     {c}
@@ -230,12 +208,12 @@ const finalCategoryList =
               State
               <select
                 value={filters.state}
-                onChange={handleStateChange}
+                onChange={handleState}
                 disabled={!filters.country}
               >
-                {stateOptions.map((st, i) => (
-                  <option key={i} value={st}>
-                    {st}
+                {stateOptions.map((s, i) => (
+                  <option key={i} value={s}>
+                    {s}
                   </option>
                 ))}
               </select>
@@ -248,12 +226,12 @@ const finalCategoryList =
               City
               <select
                 value={filters.city}
-                onChange={(e) => handleSelectionChange(e, "city")}
+                onChange={(e) => handleSelection(e, "city")}
                 disabled={!filters.state}
               >
-                {cityOptions.map((c, i) => (
-                  <option key={i} value={c}>
-                    {c}
+                {cityOptions.map((city, i) => (
+                  <option key={i} value={city}>
+                    {city}
                   </option>
                 ))}
               </select>
@@ -266,7 +244,7 @@ const finalCategoryList =
               Sort
               <select
                 value={filters.sort}
-                onChange={(e) => handleSelectionChange(e, "sort")}
+                onChange={(e) => handleSelection(e, "sort")}
               >
                 {sortOptions.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -282,9 +260,11 @@ const finalCategoryList =
 
       {/* TAGS */}
       <div className="tags">
-        {Object.entries(filters).map(([type, value]) => {
-          if (!value || type === "sort") return null;
-          return <Tag key={type} type={type} value={value} updateField={updateField} />;
+        {Object.entries(filters).map(([key, value]) => {
+          if (!value || key === "sort") return null;
+          return (
+            <Tag key={key} type={key} value={value} updateField={updateField} />
+          );
         })}
       </div>
     </section>

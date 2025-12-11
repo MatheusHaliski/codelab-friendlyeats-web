@@ -2,7 +2,7 @@ import RestaurantListings from "@/src/components/RestaurantListings.jsx";
 import { getRestaurants } from "@/src/lib/firebase/firestore.js";
 import { getAuthenticatedAppForUser } from "@/src/lib/firebase/serverApp.js";
 import { getFirestore } from "firebase/firestore";
-import { moveFoodBackToRestaurants } from "@/src/lib/firebase/migrations/moveLifestyleRestaurants";
+import { moveFoodBackToRestaurants,moveLifestyleRestaurants } from "@/src/lib/firebase/migrations/moveLifestyleRestaurants";
 import { fixLifestyleTypeField } from "@/src/lib/firebase/migrations/fixLifestyleTypeField";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +15,7 @@ export default async function Home(props) {
 
   // 🧠 IMPORTANTÍSSIMO:
   // Executa migração ANTES de carregar os restaurantes
-  await moveFoodBackToRestaurants(db);
-
+  await moveLifestyleRestaurants(db);
   const normalizedFilters = {
     ...searchParams,
     type: searchParams.type || "food",

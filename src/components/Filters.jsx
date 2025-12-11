@@ -120,7 +120,13 @@ const finalCategoryList =
       ...(name === "type" ? { category: "" } : {}),
     }));
   };
-
+ const handleNameChange = (event) => {
+    const name = event.target.value;
+    setFilters((prev) => ({
+      ...prev,
+      name,
+    }));
+  };
   const handleCountryChange = (e) =>
     setFilters((prev) => ({
       ...prev,
@@ -158,7 +164,18 @@ const finalCategoryList =
         </summary>
 
         <form method="GET">
-
+{/* NAME */}
+          <div>
+            <label>
+              Name
+              <input
+                type="text"
+                value={filters.name}
+                onChange={handleNameChange}
+                placeholder="Search by name"
+              />
+            </label>
+          </div>
           {/* TYPE */}
           <div>
             <label>

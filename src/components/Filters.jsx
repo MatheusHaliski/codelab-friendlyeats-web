@@ -1,54 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
 import Tag from "@/src/components/Tag.jsx";
-
-// ----------------------------------------------
-// LISTAS KEYWORDS
-// ----------------------------------------------
-
-const lifestyleKeywords = [
-  "life","education","entertainment","parks","appliances","arcade","crafts",
-  "galleries","auto","battery","business","cinema","clothing","electronics",
-  "motor","vehicles","school","herbal","comedy","clubs","gifts","flowers",
-  "equipment","gas","music","museum","laser","tag","golf","lessons","outdoor",
-  "gear","karts","beaches","accessories","car","dealers","tours","boating",
-  "boat","casinos","classes","cosmetics","furniture","fireworks","fishing",
-  "florists","churches","christmas trees","crane","children","spas","heating",
-  "air","conditioning","art","yoga","dvd","cleaning","gun","rifle","ammo",
-  "hair","funeral","musicians","motorcycles","bath","hotels","health",
-  "events","nail","wear","massage","doctors","repair","pool","pub","race",
-  "tracks","fashion","transportation","financial","educational","books",
-  "hvac","it","computer","hardware","mental","counseling","removal",
-  "indoor","playcenter","care","country","installation","waxing",
-  "drugstores","banks"
-];
-
-const foodKeywords = [
-  "food","bowls","trucks","restaurants","cheesecakes","american","italian",
-  "greek","german","austrian","spanish","argentinian","mexican","brazilian",
-  "french","english","portuguese","african","japanese","chinese","korean",
-  "chicken","barbecue","cakes","cupcakes","coffeshops","coffee","chocolatiers",
-  "afghan","armenian","grocery","hawaiian","creperies","bars","beer",
-  "colombian","fruits","veggies","fast food","kebab","gelato","ice cream",
-  "tea","pizza","asian","middle eastern","cuban","hot dogs","sandwiches",
-  "nightlife","moroccan","mongolian","lounges","latin american","fish",
-  "chips","british","donuts","fondue","wine","russian","olive","syrian",
-  "meat","market","lebanese","dim sum","crawl","cajun","creole","gluten",
-  "brew","breakfast","brunch","buffets","flavor","falafel","farmers",
-  "dominican","mediterran","waffles","noodles","filipino","beverage",
-  "egyptian","breweries","desserts","department","blues","jazz","butcher",
-  "brasseries","bistros","yogurt","garden","bagels","irish","iberian",
-  "laotian","juice","pot","herbs","spices","oriental","wraps","cooking",
-  "delis","dinners","czech","himalayan","nepalese","fusion","caterers"
-];
-
-// ----------------------------------------------
+import { CATEGORY_OPTIONS } from "@/src/lib/categoryOptions.js";
 
 export default function Filters({
   filters,
   setFilters,
-  categoryOptions = [""],
+  categoryOptions = CATEGORY_OPTIONS,
   cityOptions = [""],
   stateOptions = [""],
   countryOptions = [""],
@@ -62,35 +20,10 @@ export default function Filters({
     { value: "lifestyle", label: "Lifestyle" },
   ];
 
-  function capitalize(str) {
-    return str
-      .split(" ")
-      .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
-      .join(" ");
-  }
-
-  function classifyCategory(cat) {
-    if (!cat) return "food";
-    const key = cat.toLowerCase();
-    if (foodKeywords.some((k) => key.includes(k))) return "food";
-    if (lifestyleKeywords.some((k) => key.includes(k))) return "lifestyle";
-    return "food";
-  }
-
-  // Filtrando lista por type detectado
-  const filteredCategoryList = useMemo(() => {
-    if (!categoryOptions?.length) return [];
-    return categoryOptions.filter(
-      (c) => classifyCategory(c) === (filters.type || "food")
-    );
-  }, [categoryOptions, filters.type]);
-
-  const finalCategoryList =
-    filteredCategoryList.length
-      ? ["", ...filteredCategoryList]
-      : filters.type === "lifestyle"
-      ? ["", ...lifestyleKeywords.map(capitalize)]
-      : [ ...foodKeywords.map(capitalize)];
+  const finalCategoryList = [
+    "",
+    ...(categoryOptions[filters.type || "food"] ?? []),
+  ];
 
   const handleSelection = (e, field) => {
     setFilters((prev) => ({

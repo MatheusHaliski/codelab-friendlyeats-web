@@ -3,9 +3,11 @@ import {
   getDocs,
   writeBatch,
   doc,
+  setDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
-
+import { db } from "@/src/lib/firebase/clientApp";
 
 const specifickeywords =
   ["bar","bars"]

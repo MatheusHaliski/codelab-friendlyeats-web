@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import renderStars from "@/src/components/Stars.jsx";
 import { getRestaurantsSnapshot } from "@/src/lib/firebase/firestore.js";
 import Filters from "@/src/components/Filters.jsx";
+import { CATEGORY_OPTIONS } from "@/src/lib/categoryOptions.js";
 
 // Fallback global
 const FALLBACK_IMAGE =
@@ -92,24 +93,6 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
   const [filters, setFilters] = useState(initialFilters);
 
   // ------------------------------
-  // OPTIONS DE CATEGORIA
-  // ------------------------------
-  const categoryOptions = [
-    "",
-    ...Array.from(
-      allRestaurants.reduce((acc, restaurant) => {
-        if (Array.isArray(restaurant.categories)) {
-          restaurant.categories.forEach((category) => {
-            if (category) acc.add(category);
-          });
-        }
-        if (restaurant.category) acc.add(restaurant.category);
-        return acc;
-      }, new Set())
-    ).sort(),
-  ];
-
-  // ------------------------------
   // AGRUPAMENTO POR PAÍS → ESTADO → CIDADE
   // ------------------------------
   const locationOptions = allRestaurants.reduce((acc, restaurant) => {
@@ -174,7 +157,7 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
       <Filters
         filters={filters}
         setFilters={setFilters}
-        categoryOptions={categoryOptions}
+        categoryOptions={CATEGORY_OPTIONS}
         countryOptions={countryOptions}
         stateOptions={stateOptions}
         cityOptions={cityOptions}
@@ -188,12 +171,24 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
           })
 
           .filter((r) => {
+            const normalizeCategory = (value) =>
+              typeof value === "string"
+                ? value.toLowerCase()
+                : (value ?? "").toString().toLowerCase();
+
             const matchCity = !filters.city || r.city === filters.city;
             const matchCategory =
               !filters.category ||
-              (Array.isArray(r.categories)
-                ? r.categories.includes(filters.category)
-                : r.category === filters.category);
+              (() => {
+                const selectedCategory = normalizeCategory(filters.category);
+                const restaurantCategories = Array.isArray(r.categories)
+                  ? r.categories
+                  : [r.category];
+
+                return restaurantCategories.some(
+                  (category) => normalizeCategory(category) === selectedCategory
+                );
+              })();
 
             const matchCountry = !filters.country || r.country === filters.country;
             const matchState = !filters.state || r.state === filters.state;

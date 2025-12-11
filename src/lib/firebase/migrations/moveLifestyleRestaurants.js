@@ -7,7 +7,7 @@ import {
 
 
 
-const specifickeyworkds =
+const specifickeywords =
   ["bar","bars"]
 
 const lifestyleKeywords  = [
@@ -135,13 +135,14 @@ function hasLifestyleCategory(categories = []) {
 
   return categories.some((cat) => {
     const lower = cat.toLowerCase();
-    return specifickeyworkds.some((kw) => lower.includes(kw));
+    return specifickeywords.some((kw) => lower.includes(kw));
   });
 }
 
 /**
  * Moves restaurants that contain lifestyle keywords
  * from "restaurants" → "lifestyle"
+ 
  */
 export async function moveLifestyleRestaurants(db) {
   const restaurantsRef = collection(db, "restaurants");

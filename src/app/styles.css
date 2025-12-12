@@ -648,6 +648,30 @@ a {
   margin-top: 6px;
 }
 
+.restaurant-header__location {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  align-items: center;
+}
+
+.location-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #e0f2fe;
+  color: #0f172a;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.location-chip:not(:first-child) {
+  margin-left: 14px;
+  padding-left: 18px;
+  border-left: 4px solid #0f172a;
+}
+
 .segmented-control {
   background: #f3f4f6;
   border-radius: 12px;

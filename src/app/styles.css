@@ -661,10 +661,13 @@ a {
   background: #e0f2fe;
   color: #0f172a;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: 22px;
   font-size: 1rem;
   font-weight: 700;
+
+  border: 4px solid #0c4a6e; 
 }
+
 
 .location-chip:not(:first-child) {
   margin-left: 14px;

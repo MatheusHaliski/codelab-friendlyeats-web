@@ -6,10 +6,16 @@ import { Review } from "@/src/components/Reviews/Review";
 import {
   addReview,
   getReviewsSnapshotByRestaurantId,
+  saveFrontendReviewCount,
 } from "@/src/lib/firebase/firestore.js";
 
-export const getReviewCount = (reviews = [], restaurant = {}) =>
-  reviews.length || restaurant.numRatings || 0;
+export const getReviewCount = (reviews = [], restaurant = {}) => {
+  if (Number.isFinite(restaurant.review_count_fe)) return restaurant.review_count_fe;
+  if (reviews.length) return reviews.length;
+  if (Number.isFinite(restaurant.review_count)) return restaurant.review_count;
+  if (Number.isFinite(restaurant.numRatings)) return restaurant.numRatings;
+  return 0;
+};
 
 const FALLBACK_IMAGE =
   "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
@@ -74,7 +80,23 @@ export default function RestaurantProfile({
   }
 
   const imageSrc = restaurant.photo || FALLBACK_IMAGE;
+  const reviewCountFe = reviews.length;
   const reviewCount = getReviewCount(reviews, restaurant);
+
+  // -----------------------------------
+  // Persist FE review count
+  // -----------------------------------
+  useEffect(() => {
+    if (!restaurant?.id) return;
+    if (!Number.isFinite(reviewCountFe)) return;
+    if (restaurant.review_count_fe === reviewCountFe) return;
+
+    saveFrontendReviewCount(
+      restaurant.id,
+      reviewCountFe,
+      restaurant.type
+    ).catch((error) => console.error("Failed to store review_count_fe", error));
+  }, [restaurant.id, restaurant.review_count_fe, restaurant.type, reviewCountFe]);
 
   // -----------------------------------
   // HEADER
@@ -163,7 +185,7 @@ export default function RestaurantProfile({
           <h3>What people are saying</h3>
         </div>
         <span className="commentary__count">
-          {reviews.length} reviews
+          {reviewCountFe} reviews
         </span>
       </div>
 

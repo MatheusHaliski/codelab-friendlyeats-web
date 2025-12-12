@@ -25,18 +25,33 @@ function resolveFirestoreInstance(possibleDb) {
 }
 
 
-  export async function updateRestaurantImageReference(
-    restaurantId,
-    publicImageUrl,
-    firestoreInstance
-  ) {
-    if (!restaurantId || !publicImageUrl) return;
+export async function updateRestaurantImageReference(
+  restaurantId,
+  publicImageUrl,
+  firestoreInstance
+) {
+  if (!restaurantId || !publicImageUrl) return;
 
-    const database = resolveFirestoreInstance(firestoreInstance);
-    const restaurantRef = doc(database, "restaurants", restaurantId);
-    await updateDoc(restaurantRef, { photo: publicImageUrl });
+  const database = resolveFirestoreInstance(firestoreInstance);
+  const restaurantRef = doc(database, "restaurants", restaurantId);
+  await updateDoc(restaurantRef, { photo: publicImageUrl });
 
-  }
+}
+
+export async function saveFrontendReviewCount(
+  restaurantId,
+  reviewCount,
+  restaurantType,
+  firestoreInstance
+) {
+  if (!restaurantId || !Number.isFinite(reviewCount)) return;
+
+  const database = resolveFirestoreInstance(firestoreInstance);
+  const collectionName = restaurantType === "lifestyle" ? "lifestyle" : "restaurants";
+  const restaurantRef = doc(database, collectionName, restaurantId);
+
+  await updateDoc(restaurantRef, { review_count_fe: reviewCount });
+}
 
 // 🔹 Adiciona avaliação e atualiza médias
   async function updateWithRating(transaction, docRef, newRatingDocument, review) {
@@ -238,10 +253,12 @@ export async function getRestaurantById(possibleDbOrId, maybeRestaurantId) {
             : [];
         const primaryCategory = data.category ?? categories[0] ?? "";
 
-        const reviewCount = data.review_count ?? data.numRatings ?? 0;
+        const frontendReviewCount = data.review_count_fe;
+        const reviewCount =
+          data.review_count ?? data.numRatings ?? frontendReviewCount ?? 0;
         const averageRating = data.stars ?? data.avgRating ?? 0;
         const price = Number.isFinite(data.price) ? data.price : 0;
-        const city =  data.city ?? "";
+        const city = data.city ?? "";
         const address = data.address ?? data.address;
         const state = data.state ?? "";
         const country = data.country ?? "";
@@ -259,6 +276,9 @@ export async function getRestaurantById(possibleDbOrId, maybeRestaurantId) {
           country,
           type,
           category: primaryCategory,
+          review_count_fe: Number.isFinite(frontendReviewCount)
+            ? frontendReviewCount
+            : reviewCount,
           review_count: reviewCount,
           stars: averageRating,
           numRatings: reviewCount,

@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import renderStars from "@/src/components/Stars.jsx";
-import { addReview, getReviewsSnapshotByRestaurantId } from "@/src/lib/firebase/firestore.js";
+import {
+  addReview,
+  getReviewsSnapshotByRestaurantId,
+} from "@/src/lib/firebase/firestore.js";
 import { updateRestaurantImage } from "@/src/lib/firebase/storage.js";
 
 const FALLBACK_IMAGE =
@@ -14,48 +17,63 @@ export default function RestaurantProfile({
   userId,
   onPhotoUpdated,
 }) {
+  // -----------------------------------
+  // STATE
+  // -----------------------------------
   const [selectedTab, setSelectedTab] = useState("overview");
   const [reviews, setReviews] = useState([]);
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(5);
   const [isUploading, setIsUploading] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
-  // -------------------------
-  // Load reviews in real-time
-  // -------------------------
+  // -----------------------------------
+  // REALTIME REVIEWS
+  // -----------------------------------
   useEffect(() => {
     return getReviewsSnapshotByRestaurantId(restaurant.id, (data) => {
       setReviews(data);
     });
   }, [restaurant.id]);
 
-  // -------------------------
-  // Upload new image
-  // -------------------------
-  async function handleImageUpload(event) {
-    const file = event.target.files?.[0];
+  // -----------------------------------
+  // SORT + LIMIT REVIEWS
+  // -----------------------------------
+  const sortedReviews = useMemo(() => {
+    return [...reviews].sort((a, b) => {
+      const da = a.createdAt?.seconds || 0;
+      const db = b.createdAt?.seconds || 0;
+      return db - da;
+    });
+  }, [reviews]);
 
+  const visibleReviews = showAllReviews
+    ? sortedReviews
+    : sortedReviews.slice(0, 5);
+
+  // -----------------------------------
+  // IMAGE UPLOAD
+  // -----------------------------------
+  async function handleImageUpload(e) {
+    const file = e.target.files?.[0];
     if (!file || isUploading) return;
 
     try {
       setIsUploading(true);
       const url = await updateRestaurantImage(restaurant.id, file);
       onPhotoUpdated?.(url);
-    } catch (error) {
-      console.error("Failed to update restaurant image", error);
+    } catch (err) {
+      console.error(err);
       alert("We couldn't update the photo. Please try again.");
     } finally {
       setIsUploading(false);
-      // Allow re-selecting the same file after an attempt
-      if (event.target) {
-        event.target.value = "";
-      }
+      e.target.value = "";
     }
   }
 
-  // -------------------------
-  // Add review
-  // -------------------------
+  // -----------------------------------
+  // SUBMIT REVIEW
+  // -----------------------------------
   async function handleSubmitReview(e) {
     e.preventDefault();
     if (!reviewText.trim()) return;
@@ -70,15 +88,15 @@ export default function RestaurantProfile({
       createdAt: new Date(),
     });
 
-
     setReviewText("");
+    setRating(5);
   }
 
   const imageSrc = restaurant.photo || FALLBACK_IMAGE;
 
-  // -------------------------
-  // UI - Header
-  // -------------------------
+  // -----------------------------------
+  // HEADER
+  // -----------------------------------
   const header = (
     <section className="restaurant-header">
       <div className="restaurant-header__image">
@@ -88,9 +106,9 @@ export default function RestaurantProfile({
           <label className="upload-label">
             <input
               type="file"
-              className="hidden"
-              onChange={handleImageUpload}
+              hidden
               accept="image/*"
+              onChange={handleImageUpload}
             />
             <span className="upload-btn">
               {isUploading ? "Updating..." : "Update Photo"}
@@ -103,6 +121,7 @@ export default function RestaurantProfile({
         <p className="restaurant-header__eyebrow">
           {restaurant.type ?? "Restaurant"}
         </p>
+
         <h1>{restaurant.name}</h1>
 
         <div className="rating-row">
@@ -120,72 +139,36 @@ export default function RestaurantProfile({
             <span className="pill pill--muted">{restaurant.country}</span>
           )}
           {restaurant.price && (
-            <span className="pill pill--muted">{"💲".repeat(restaurant.price)}</span>
+            <span className="pill pill--muted">
+              {"💲".repeat(restaurant.price)}
+            </span>
           )}
         </div>
       </div>
     </section>
   );
 
-  // -------------------------
-  // UI - Tabs Content
-  // -------------------------
-
+  // -----------------------------------
+  // TABS
+  // -----------------------------------
   const tabs = {
     overview: (
-      <div className="panel-grid">
-        <div className="panel-card">
-          <h3>Overview</h3>
-          <p className="panel-copy">
-            A quick glance at this spot. Check the highlights, see how guests
-            rate it, and decide if it fits your next outing.
-          </p>
-        </div>
-
-        <div className="panel-card">
-          <h4>Quick facts</h4>
-          <div className="fact-grid">
-            <div>
-              <p className="fact-label">Category</p>
-              <p className="fact-value">
-                {Array.isArray(restaurant.categories)
-                  ? restaurant.categories.join(", ")
-                  : restaurant.category || "Not listed"}
-              </p>
-            </div>
-            <div>
-              <p className="fact-label">Average Rating</p>
-              <p className="fact-value">
-                {restaurant.avgRating?.toFixed(1) ?? "N/A"}
-              </p>
-            </div>
-            <div>
-              <p className="fact-label">Total Reviews</p>
-              <p className="fact-value">{restaurant.numRatings || 0}</p>
-            </div>
-          </div>
-        </div>
+      <div className="panel-card">
+        <h3>Overview</h3>
+        <p className="panel-copy">
+          A quick snapshot of this restaurant and what people think about it.
+        </p>
       </div>
     ),
 
     location: (
       <div className="info-grid">
-        <div>
-          <span className="info-label">Address</span>
-          <p className="info-value">{restaurant.address || "Not provided"}</p>
-        </div>
-        <div>
-          <span className="info-label">City</span>
-          <p className="info-value">{restaurant.city || "Not provided"}</p>
-        </div>
-        <div>
-          <span className="info-label">State</span>
-          <p className="info-value">{restaurant.state || "Not provided"}</p>
-        </div>
-        <div>
-          <span className="info-label">Country</span>
-          <p className="info-value">{restaurant.country || "Not provided"}</p>
-        </div>
+        {["address", "city", "state", "country"].map((f) => (
+          <div key={f}>
+            <span className="info-label">{f.toUpperCase()}</span>
+            <p className="info-value">{restaurant[f] || "Not provided"}</p>
+          </div>
+        ))}
       </div>
     ),
 
@@ -199,50 +182,11 @@ export default function RestaurantProfile({
         </p>
       </div>
     ),
-
-    metadata: (
-      <div className="info-grid">
-        {Object.entries(restaurant)
-          .filter(([k]) =>
-            !["id", "categories", "photo", "avgRating", "numRatings"].includes(k)
-          )
-          .map(([key, value]) => (
-            <div key={key}>
-              <span className="info-label">
-                {key.replace(/_/g, " ").toUpperCase()}
-              </span>
-              <p className="info-value">{JSON.stringify(value)}</p>
-            </div>
-          ))}
-      </div>
-    ),
   };
 
-  // -------------------------
-  // UI - Tab Buttons
-  // -------------------------
-  const tabButtons = (
-    <div className="segmented-control" role="tablist" aria-label="Restaurant sections">
-      {["overview", "location", "categories", "metadata"].map((t) => (
-        <button
-          key={t}
-          role="tab"
-          className={
-            selectedTab === t
-              ? "segmented-control__button is-active"
-              : "segmented-control__button"
-          }
-          onClick={() => setSelectedTab(t)}
-        >
-          {t.replace(/^(.)/, (c) => c.toUpperCase())}
-        </button>
-      ))}
-    </div>
-  );
-
-  // -------------------------
-  // UI - Review Form (BOTTOM)
-  // -------------------------
+  // -----------------------------------
+  // COMMENTS + FORM (FINAL)
+  // -----------------------------------
   const reviewSection = (
     <section className="commentary">
       <div className="commentary__header">
@@ -250,9 +194,12 @@ export default function RestaurantProfile({
           <p className="eyebrow">Commentary</p>
           <h3>What people are saying</h3>
         </div>
-        <span className="commentary__count">{reviews.length} reviews</span>
+        <span className="commentary__count">
+          {reviews.length} reviews
+        </span>
       </div>
 
+      {/* CARD BRANCO */}
       <div className="commentary__form">
         <h4>Add your review</h4>
 
@@ -260,7 +207,7 @@ export default function RestaurantProfile({
           <p className="muted">You must be logged in to review.</p>
         ) : (
           <form onSubmit={handleSubmitReview} className="review-form">
-            <label className="review-form__rating">
+            <label>
               <span>Rating</span>
               <select
                 value={rating}
@@ -274,10 +221,10 @@ export default function RestaurantProfile({
               </select>
             </label>
 
-            <label className="review-form__comment">
+            <label>
               <span>Commentary</span>
               <textarea
-                placeholder="Share a short take on your visit"
+                placeholder="Share your experience"
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
               />
@@ -288,51 +235,80 @@ export default function RestaurantProfile({
             </button>
           </form>
         )}
-      </div>
 
-      <div className="commentary__latest">
-        <h4>Latest comments</h4>
-        <div className="commentary__list">
-          {reviews.length === 0 ? (
+        {/* ⭐ LATEST COMMENTS */}
+        <div className="commentary__latest">
+          <h4>Latest comments</h4>
+
+          {visibleReviews.length === 0 ? (
             <p className="muted">Be the first to leave a comment.</p>
           ) : (
-            <ul>
-              {reviews.map((r) => {
-                const avatarSrc = r.userPhoto || "/profile.svg";
-                const nameOrEmail =
-                  r.userDisplayName || r.userEmail || "Anonymous";
-
-                return (
-                  <li key={r.id} className="commentary__item">
-                    <div className="commentary__item-head">
-                      <img
-                        src={avatarSrc}
-                        alt={nameOrEmail}
-                        className="commentary__avatar"
-                      />
-                      <div>
-                        <strong>{nameOrEmail}</strong>
-                        {r.rating && (
-                          <span className="pill pill--muted">{r.rating} ★</span>
-                        )}
-                      </div>
+            <ul className="commentary__list">
+              {visibleReviews.map((r) => (
+                <li key={r.id} className="commentary__item animate-in">
+                  <div className="commentary__item-head">
+                    <img
+                      src={r.userPhoto || "/profile.svg"}
+                      alt={r.userDisplayName || r.userEmail}
+                      className="commentary__avatar"
+                    />
+                    <div>
+                      <strong>
+                        {r.userDisplayName || r.userEmail || "Anonymous"}
+                      </strong>
+                      {typeof r.rating === "number" && (
+                        <ul className="rating-stars">
+                          {renderStars(r.rating)}
+                        </ul>
+                      )}
                     </div>
-                    <p className="commentary__text">{r.text}</p>
-                  </li>
-                );
-              })}
+                  </div>
+
+                  <p className="commentary__text">{r.text}</p>
+                </li>
+              ))}
             </ul>
+          )}
+
+          {sortedReviews.length > 5 && (
+            <button
+              type="button"
+              className="view-all-btn"
+              onClick={() => setShowAllReviews((v) => !v)}
+            >
+              {showAllReviews ? "Show less" : "View all reviews"}
+            </button>
           )}
         </div>
       </div>
     </section>
   );
 
+  // -----------------------------------
+  // RENDER
+  // -----------------------------------
   return (
     <div className="restaurant-profile">
       {header}
-      {tabButtons}
+
+      <div className="segmented-control">
+        {Object.keys(tabs).map((t) => (
+          <button
+            key={t}
+            className={
+              selectedTab === t
+                ? "segmented-control__button is-active"
+                : "segmented-control__button"
+            }
+            onClick={() => setSelectedTab(t)}
+          >
+            {t.charAt(0).toUpperCase() + t.slice(1)}
+          </button>
+        ))}
+      </div>
+
       <section className="tab-content">{tabs[selectedTab]}</section>
+
       {reviewSection}
     </div>
   );

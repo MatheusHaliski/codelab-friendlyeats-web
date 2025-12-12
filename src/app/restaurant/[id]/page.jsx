@@ -5,9 +5,6 @@ import {
   getAuthenticatedAppForUser,
   getAuthenticatedAppForUser as getUser,
 } from "@/src/lib/firebase/serverApp.js";
-import ReviewsList, {
-  ReviewsListSkeleton,
-} from "@/src/components/Reviews/ReviewsList";
 import {
   GeminiSummary,
   GeminiSummarySkeleton,

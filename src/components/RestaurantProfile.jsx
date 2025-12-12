@@ -125,11 +125,17 @@ export default function RestaurantProfile({
         </div>
 
         <div className="restaurant-header__tags">
-          {restaurant.city && <span className="pill">{restaurant.city}</span>}
-          {restaurant.state && <span className="pill">{restaurant.state}</span>}
-          {restaurant.country && (
-            <span className="pill pill--muted">{restaurant.country}</span>
-          )}
+          <div className="restaurant-header__location">
+            {restaurant.city && (
+              <span className="location-chip">{restaurant.city}</span>
+            )}
+            {restaurant.state && (
+              <span className="location-chip">{restaurant.state}</span>
+            )}
+            {restaurant.country && (
+              <span className="location-chip">{restaurant.country}</span>
+            )}
+          </div>
           {restaurant.price && (
             <span className="pill pill--muted">
               {"💲".repeat(restaurant.price)}

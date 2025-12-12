@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 async function geocodeCity({ cidade, estado, pais }) {
   const address = encodeURIComponent(`${cidade}, ${estado}, ${pais}`);
 
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${process.env.GOOGLE_API_KEY}`;
+ const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=AIzaSyDfzYkcHGGXxcp32Tj7zw-5l_DOKJ_Jnl4`;
 
   const res = await fetch(url);
   const data = await res.json();

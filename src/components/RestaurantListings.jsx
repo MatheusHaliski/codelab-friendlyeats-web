@@ -45,7 +45,6 @@ const RestaurantRatings = ({ restaurant }) => {
   return (
     <div className="restaurant__rating">
       <ul>{renderStars(restaurant.avgRating)}</ul>
-      <span>({displayReviewCount})</span>
     </div>
   );
 };

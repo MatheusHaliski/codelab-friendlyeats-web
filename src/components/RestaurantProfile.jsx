@@ -236,7 +236,45 @@ export default function RestaurantProfile({
         <span className="commentary__count">{reviews.length} reviews</span>
       </div>
 
-      <div className="commentary__content">
+      <div className="commentary__form">
+        <h4>Add your review</h4>
+
+        {!userId ? (
+          <p className="muted">You must be logged in to review.</p>
+        ) : (
+          <form onSubmit={handleSubmitReview} className="review-form">
+            <label className="review-form__rating">
+              <span>Rating</span>
+              <select
+                value={rating}
+                onChange={(e) => setRating(Number(e.target.value))}
+              >
+                {[5, 4, 3, 2, 1].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="review-form__comment">
+              <span>Commentary</span>
+              <textarea
+                placeholder="Share a short take on your visit"
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+              />
+            </label>
+
+            <button type="submit" disabled={!reviewText.trim()}>
+              Submit review
+            </button>
+          </form>
+        )}
+      </div>
+
+      <div className="commentary__latest">
+        <h4>Latest comments</h4>
         <div className="commentary__list">
           {reviews.length === 0 ? (
             <p className="muted">Be the first to leave a comment.</p>
@@ -267,43 +305,6 @@ export default function RestaurantProfile({
                 );
               })}
             </ul>
-          )}
-        </div>
-
-        <div className="commentary__form">
-          <h4>Add your review</h4>
-
-          {!userId ? (
-            <p className="muted">You must be logged in to review.</p>
-          ) : (
-            <form onSubmit={handleSubmitReview} className="review-form">
-              <label className="review-form__rating">
-                <span>Rating</span>
-                <select
-                  value={rating}
-                  onChange={(e) => setRating(Number(e.target.value))}
-                >
-                  {[5, 4, 3, 2, 1].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="review-form__comment">
-                <span>Commentary</span>
-                <textarea
-                  placeholder="Share a short take on your visit"
-                  value={reviewText}
-                  onChange={(e) => setReviewText(e.target.value)}
-                />
-              </label>
-
-              <button type="submit" disabled={!reviewText.trim()}>
-                Submit review
-              </button>
-            </form>
           )}
         </div>
       </div>

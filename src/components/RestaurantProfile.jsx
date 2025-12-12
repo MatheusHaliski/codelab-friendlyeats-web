@@ -71,6 +71,7 @@ export default function RestaurantProfile({
   }
 
   const imageSrc = restaurant.photo || FALLBACK_IMAGE;
+  const reviewCount = reviews.length || restaurant.numRatings || 0;
 
   // -----------------------------------
   // HEADER
@@ -92,7 +93,7 @@ export default function RestaurantProfile({
           <ul>{renderStars(restaurant.avgRating)}</ul>
           <span>
             {restaurant.avgRating?.toFixed(1) ?? "N/A"} (
-            {restaurant.numRatings || 0} reviews)
+            {reviewCount} reviews)
           </span>
         </div>
 

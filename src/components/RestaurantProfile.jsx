@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import renderStars from "@/src/components/Stars.jsx";
+import { Review } from "@/src/components/Reviews/Review";
 import {
   addReview,
   getReviewsSnapshotByRestaurantId,
@@ -238,47 +239,41 @@ export default function RestaurantProfile({
 
         {/* ⭐ LATEST COMMENTS */}
         <div className="commentary__latest">
-          <h4>Latest comments</h4>
+          <div className="reviews-panel">
+            <h4>Latest comments</h4>
 
-          {visibleReviews.length === 0 ? (
-            <p className="muted">Be the first to leave a comment.</p>
-          ) : (
-            <ul className="commentary__list">
-              {visibleReviews.map((r) => (
-                <li key={r.id} className="commentary__item animate-in">
-                  <div className="commentary__item-head">
-                    <img
-                      src={r.userPhoto || "/profile.svg"}
-                      alt={r.userDisplayName || r.userEmail}
-                      className="commentary__avatar"
-                    />
-                    <div>
-                      <strong>
-                        {r.userDisplayName || r.userEmail || "Anonymous"}
-                      </strong>
-                      {typeof r.rating === "number" && (
-                        <ul className="rating-stars">
-                          {renderStars(r.rating)}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
+            {visibleReviews.length === 0 ? (
+              <p className="muted">Be the first to leave a comment.</p>
+            ) : (
+              <ul className="reviews">
+                {visibleReviews.map((r) => (
+                  <Review
+                    key={r.id}
+                    grade={r.rating}
+                    comment={r.text}
+                    email={r.userDisplayName || r.userEmail || "Anonymous"}
+                    timestamp={
+                      r.createdAt?.toDate
+                        ? r.createdAt.toDate()
+                        : r.createdAt?.seconds
+                        ? new Date(r.createdAt.seconds * 1000)
+                        : new Date()
+                    }
+                  />
+                ))}
+              </ul>
+            )}
 
-                  <p className="commentary__text">{r.text}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {sortedReviews.length > 5 && (
-            <button
-              type="button"
-              className="view-all-btn"
-              onClick={() => setShowAllReviews((v) => !v)}
-            >
-              {showAllReviews ? "Show less" : "View all reviews"}
-            </button>
-          )}
+            {sortedReviews.length > 5 && (
+              <button
+                type="button"
+                className="view-all-btn"
+                onClick={() => setShowAllReviews((v) => !v)}
+              >
+                {showAllReviews ? "Show less" : "View all reviews"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </section>

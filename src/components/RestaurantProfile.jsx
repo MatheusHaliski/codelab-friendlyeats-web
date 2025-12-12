@@ -8,7 +8,12 @@ import { updateRestaurantImage } from "@/src/lib/firebase/storage.js";
 const FALLBACK_IMAGE =
   "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
 
-export default function RestaurantProfile({ restaurant, userId }) {
+export default function RestaurantProfile({
+  restaurant,
+  user,
+  userId,
+  onPhotoUpdated,
+}) {
   const [selectedTab, setSelectedTab] = useState("overview");
   const [reviews, setReviews] = useState([]);
   const [reviewText, setReviewText] = useState("");
@@ -31,7 +36,7 @@ export default function RestaurantProfile({ restaurant, userId }) {
     if (!file) return;
 
     const url = await updateRestaurantImage(restaurant.id, file);
-    restaurant.photo = url;
+    onPhotoUpdated?.(url);
   }
 
   // -------------------------
@@ -43,6 +48,9 @@ export default function RestaurantProfile({ restaurant, userId }) {
 
     await addReview(restaurant.id, {
       userId,
+      userEmail: user?.email,
+      userPhoto: user?.photoURL,
+      userDisplayName: user?.displayName,
       text: reviewText.trim(),
       rating,
       createdAt: new Date(),
@@ -234,17 +242,30 @@ export default function RestaurantProfile({ restaurant, userId }) {
             <p className="muted">Be the first to leave a comment.</p>
           ) : (
             <ul>
-              {reviews.map((r) => (
-                <li key={r.id} className="commentary__item">
-                  <div className="commentary__item-head">
-                    <strong>{r.userEmail || "Anonymous"}</strong>
-                    {r.rating && (
-                      <span className="pill pill--muted">{r.rating} ★</span>
-                    )}
-                  </div>
-                  <p className="commentary__text">{r.text}</p>
-                </li>
-              ))}
+              {reviews.map((r) => {
+                const avatarSrc = r.userPhoto || "/profile.svg";
+                const nameOrEmail =
+                  r.userDisplayName || r.userEmail || "Anonymous";
+
+                return (
+                  <li key={r.id} className="commentary__item">
+                    <div className="commentary__item-head">
+                      <img
+                        src={avatarSrc}
+                        alt={nameOrEmail}
+                        className="commentary__avatar"
+                      />
+                      <div>
+                        <strong>{nameOrEmail}</strong>
+                        {r.rating && (
+                          <span className="pill pill--muted">{r.rating} ★</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="commentary__text">{r.text}</p>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

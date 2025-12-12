@@ -828,6 +828,15 @@ a {
   padding: 12px;
 }
 
+.commentary__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 12px;
+  border: 1px solid #e5e7eb;
+}
+
 .commentary select,
 .commentary textarea {
   width: 100%;

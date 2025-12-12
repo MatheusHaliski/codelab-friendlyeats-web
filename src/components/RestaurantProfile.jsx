@@ -8,6 +8,9 @@ import {
   getReviewsSnapshotByRestaurantId,
 } from "@/src/lib/firebase/firestore.js";
 
+export const getReviewCount = (reviews = [], restaurant = {}) =>
+  reviews.length || restaurant.numRatings || 0;
+
 const FALLBACK_IMAGE =
   "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
 
@@ -71,7 +74,7 @@ export default function RestaurantProfile({
   }
 
   const imageSrc = restaurant.photo || FALLBACK_IMAGE;
-  const reviewCount = reviews.length || restaurant.numRatings || 0;
+  const reviewCount = getReviewCount(reviews, restaurant);
 
   // -----------------------------------
   // HEADER

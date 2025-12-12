@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import renderStars from "@/src/components/Stars.jsx";
+import { getReviewCount } from "@/src/components/RestaurantProfile.jsx";
 import { getRestaurantsSnapshot } from "@/src/lib/firebase/firestore.js";
 import Filters from "@/src/components/Filters.jsx";
 import { CATEGORY_OPTIONS } from "@/src/lib/categoryOptions.js";
@@ -33,26 +34,8 @@ const ImageCover = ({ photo, name }) => {
   );
 };
 
-const resolveReviewCount = (restaurant) => {
-  const candidates = [
-    restaurant.review_count,
-    restaurant.numRatings,
-    restaurant.reviews_count,
-    restaurant.reviewCount,
-    restaurant.reviewsCount,
-  ];
-
-  const resolved = candidates.find((value) => value !== undefined && value !== null);
-  if (resolved !== undefined) return resolved;
-
-  if (Array.isArray(restaurant.reviews)) return restaurant.reviews.length;
-  if (Array.isArray(restaurant.commentary)) return restaurant.commentary.length;
-
-  return 0;
-};
-
 const RestaurantRating = ({ restaurant }) => {
-  const reviewCount = resolveReviewCount(restaurant);
+  const reviewCount = getReviewCount(restaurant.reviews ?? [], restaurant);
 
   return (
     <div className="restaurant__rating">
@@ -189,7 +172,10 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
         {restaurants
           .sort((a, b) => {
             if (filters.sort === "review")
-              return resolveReviewCount(b) - resolveReviewCount(a);
+              return (
+                getReviewCount(b.reviews ?? [], b) -
+                getReviewCount(a.reviews ?? [], a)
+              );
             return b.avgRating - a.avgRating;
           })
 

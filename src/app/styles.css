@@ -669,7 +669,6 @@ a {
 .location-chip:not(:first-child) {
   margin-left: 14px;
   padding-left: 18px;
-  border-left: 4px solid #0f172a;
 }
 
 .segmented-control {

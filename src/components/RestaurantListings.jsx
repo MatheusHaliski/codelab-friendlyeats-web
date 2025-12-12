@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import renderStars from "@/src/components/Stars.jsx";
-import { getReviewCount } from "@/src/components/RestaurantProfile.jsx";
+import {
+  getReviewCount,
+  reviewCountFe,
+} from "@/src/components/RestaurantProfile.jsx";
 import { getRestaurantsSnapshot } from "@/src/lib/firebase/firestore.js";
 import Filters from "@/src/components/Filters.jsx";
 import { CATEGORY_OPTIONS } from "@/src/lib/categoryOptions.js";
@@ -34,13 +37,15 @@ const ImageCover = ({ photo, name }) => {
   );
 };
 
-const RestaurantRating = ({ restaurant }) => {
+const RestaurantRatings = ({ restaurant }) => {
+  const frontendReviewCount = reviewCountFe(restaurant.reviews ?? []);
   const reviewCount = getReviewCount(restaurant.reviews ?? [], restaurant);
+  const displayReviewCount = frontendReviewCount || reviewCount;
 
   return (
     <div className="restaurant__rating">
       <ul>{renderStars(restaurant.avgRating)}</ul>
-      <span>({reviewCount})</span>
+      <span>({displayReviewCount})</span>
     </div>
   );
 };
@@ -56,7 +61,7 @@ const RestaurantMetadata = ({ restaurant }) => (
 const RestaurantDetails = ({ restaurant }) => (
   <div className="restaurant__details">
     <h2>{restaurant.name}</h2>
-    <RestaurantRating restaurant={restaurant} />
+    <RestaurantRatings restaurant={restaurant} />
     <RestaurantMetadata restaurant={restaurant} />
   </div>
 );

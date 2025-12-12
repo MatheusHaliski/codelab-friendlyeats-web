@@ -981,6 +981,99 @@ a {
   flex-direction: row-reverse;
   justify-content: flex-end;
 }
+/* ⭐⭐⭐⭐⭐ Rating stars - FIX FINAL */
+.rating-stars {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  line-height: 1;
+}
+
+.rating-stars svg {
+  width: 16px !important;
+  height: 16px !important;
+  fill: #fbbf24; /* amarelo */
+  flex-shrink: 0;
+}
+/* ---------- COMMENTS ---------- */
+
+.commentary__form {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.06);
+}
+
+.commentary__latest {
+  margin-top: 32px;
+  border-top: 1px solid #eee;
+  padding-top: 24px;
+}
+
+.commentary__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.commentary__item {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.commentary__item:last-child {
+  border-bottom: none;
+}
+
+.commentary__item-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.commentary__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.rating-stars {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.view-all-btn {
+  margin-top: 16px;
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.view-all-btn:hover {
+  text-decoration: underline;
+}
+
+/* ---------- ANIMATION ---------- */
+
+.animate-in {
+  animation: fadeSlideIn 0.35s ease-out both;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .radio-input {
   position: fixed;

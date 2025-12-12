@@ -252,6 +252,7 @@ export default function RestaurantProfile({
                     grade={r.rating}
                     comment={r.text}
                     email={r.userDisplayName || r.userEmail || "Anonymous"}
+                    photo={r.userPhoto}
                     timestamp={
                       r.createdAt?.toDate
                         ? r.createdAt.toDate()

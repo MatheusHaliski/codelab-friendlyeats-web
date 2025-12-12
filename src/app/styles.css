@@ -891,6 +891,35 @@ a {
   flex-wrap: wrap;
 }
 
+.review__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #1f2937, #2563eb);
+  color: #f9fafb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  text-transform: uppercase;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.review__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.review__body {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
 .review__score {
   display: flex;
   flex-direction: column;

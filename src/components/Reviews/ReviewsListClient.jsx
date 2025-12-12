@@ -25,6 +25,7 @@ export default function ReviewsListClient({ initialReviews, restaurantId }) {
             grade={r.grade || r.rating}
             comment={r.text || r.comment}
             email={r.userDisplayName || r.userEmail || r.email || "Anonymous"}
+            photo={r.userPhoto}
             timestamp={
               r.timestamp?.toDate
                 ? r.timestamp.toDate()

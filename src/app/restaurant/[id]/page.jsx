@@ -5,9 +5,6 @@ import {
   getAuthenticatedAppForUser,
   getAuthenticatedAppForUser as getUser,
 } from "@/src/lib/firebase/serverApp.js";
-import ReviewsList, {
-  ReviewsListSkeleton,
-} from "@/src/components/Reviews/ReviewsList";
 import {
   GeminiSummary,
   GeminiSummarySkeleton,
@@ -42,11 +39,6 @@ export default async function Home(props) {
           <GeminiSummary restaurantId={params.id} />
         </Suspense>
       </Restaurant>
-      <Suspense
-        fallback={<ReviewsListSkeleton numReviews={restaurant.numRatings} />}
-      >
-        <ReviewsList restaurantId={params.id} />
-      </Suspense>
     </main>
   );
 }

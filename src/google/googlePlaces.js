@@ -28,7 +28,7 @@ export async function searchRestaurantsByCity({
                                                 estado,
                                                 pais,
                                                 radius = 1000,
-                                                maxResultCount = 10,
+                                                maxResultCount = 100,
                                               }) {
   // 1️⃣ Geocoding
   const { latitude, longitude } = await geocodeCity({
@@ -59,7 +59,25 @@ export async function searchRestaurantsByCity({
         "Content-Type": "application/json",
         "X-Goog-Api-Key": process.env.GOOGLE_API_KEY,
         "X-Goog-FieldMask":
-          "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location",
+          [
+            "places.id",
+            "places.displayName",
+            "places.formattedAddress",
+            "places.addressComponents",
+            "places.plusCode",
+            "places.location",
+            "places.viewport",
+            "places.types",
+            "places.rating",
+            "places.userRatingCount",
+            "places.priceLevel",
+            "places.websiteUri",
+            "places.googleMapsUri",
+            "places.regularOpeningHours",
+            "places.internationalPhoneNumber",
+            "places.nationalPhoneNumber",
+            "places.photos",
+          ].join(","),
       },
       body: JSON.stringify(body),
     }

@@ -17,6 +17,8 @@ export const getReviewCount = (reviews = [], restaurant = {}) => {
   return 0;
 };
 
+export const reviewCountFe = (reviews = []) => reviews.length;
+
 const FALLBACK_IMAGE =
   "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
 
@@ -80,7 +82,7 @@ export default function RestaurantProfile({
   }
 
   const imageSrc = restaurant.photo || FALLBACK_IMAGE;
-  const reviewCountFe = reviews.length;
+  const reviewCountFeValue = reviewCountFe(reviews);
   const reviewCount = getReviewCount(reviews, restaurant);
 
   // -----------------------------------
@@ -88,15 +90,15 @@ export default function RestaurantProfile({
   // -----------------------------------
   useEffect(() => {
     if (!restaurant?.id) return;
-    if (!Number.isFinite(reviewCountFe)) return;
-    if (restaurant.review_count_fe === reviewCountFe) return;
+    if (!Number.isFinite(reviewCountFeValue)) return;
+    if (restaurant.review_count_fe === reviewCountFeValue) return;
 
     saveFrontendReviewCount(
       restaurant.id,
-      reviewCountFe,
+      reviewCountFeValue,
       restaurant.type
     ).catch((error) => console.error("Failed to store review_count_fe", error));
-  }, [restaurant.id, restaurant.review_count_fe, restaurant.type, reviewCountFe]);
+  }, [restaurant.id, restaurant.review_count_fe, restaurant.type, reviewCountFeValue]);
 
   // -----------------------------------
   // HEADER
@@ -185,7 +187,7 @@ export default function RestaurantProfile({
           <h3>What people are saying</h3>
         </div>
         <span className="commentary__count">
-          {reviewCountFe} reviews
+          {reviewCountFeValue} reviews
         </span>
       </div>
 

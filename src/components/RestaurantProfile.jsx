@@ -41,13 +41,13 @@ export default function RestaurantProfile({ restaurant, userId }) {
     e.preventDefault();
     if (!reviewText.trim()) return;
 
-    await addReview({
-      restaurantId: restaurant.id,
+    await addReview(restaurant.id, {
       userId,
       text: reviewText.trim(),
       rating,
       createdAt: new Date(),
     });
+
 
     setReviewText("");
   }

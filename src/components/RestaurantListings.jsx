@@ -33,8 +33,23 @@ const ImageCover = ({ photo, name }) => {
   );
 };
 
-const resolveReviewCount = (restaurant) =>
-  restaurant.review_count ?? restaurant.numRatings ?? restaurant.reviews?.length ?? 0;
+const resolveReviewCount = (restaurant) => {
+  const candidates = [
+    restaurant.review_count,
+    restaurant.numRatings,
+    restaurant.reviews_count,
+    restaurant.reviewCount,
+    restaurant.reviewsCount,
+  ];
+
+  const resolved = candidates.find((value) => value !== undefined && value !== null);
+  if (resolved !== undefined) return resolved;
+
+  if (Array.isArray(restaurant.reviews)) return restaurant.reviews.length;
+  if (Array.isArray(restaurant.commentary)) return restaurant.commentary.length;
+
+  return 0;
+};
 
 const RestaurantRating = ({ restaurant }) => {
   const reviewCount = resolveReviewCount(restaurant);

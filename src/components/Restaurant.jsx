@@ -12,7 +12,8 @@ export default function Restaurant({
   initialUserId,
 }) {
   const [restaurantDetails, setRestaurantDetails] = useState(initialRestaurant);
-  const userId = useUser()?.uid || initialUserId;
+  const user = useUser();
+  const userId = user?.uid || initialUserId;
 
   async function handleRestaurantImage(target) {
     const image = target.files?.[0];
@@ -35,7 +36,11 @@ export default function Restaurant({
   return (
     <RestaurantProfile
       restaurant={restaurantDetails}
+      user={user ?? undefined}
       userId={userId}
+      onPhotoUpdated={(photoUrl) =>
+        setRestaurantDetails((prev) => ({ ...prev, photo: photoUrl }))
+      }
     />
   );
 }

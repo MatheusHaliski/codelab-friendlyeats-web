@@ -4,8 +4,30 @@ import { storage } from "@/src/lib/firebase/clientApp";
 
 import { updateRestaurantImageReference } from "@/src/lib/firebase/firestore";
 
-// Replace the two functions below
-export async function updateRestaurantImage(restaurantId, image) {}
+export async function updateRestaurantImage(restaurantId, image) {
+  const downloadUrl = await uploadImage(restaurantId, image);
 
-async function uploadImage(restaurantId, image) {}
-// Replace the two functions above
+  await updateRestaurantImageReference(restaurantId, downloadUrl);
+
+  return downloadUrl;
+}
+
+async function uploadImage(restaurantId, image) {
+  const storageRef = ref(
+    storage,
+    `restaurants/${restaurantId}/${encodeURIComponent(image.name)}`
+  );
+
+  const uploadTask = uploadBytesResumable(storageRef, image);
+
+  const snapshot = await new Promise((resolve, reject) => {
+    uploadTask.on(
+      "state_changed",
+      () => {},
+      reject,
+      () => resolve(uploadTask.snapshot)
+    );
+  });
+
+  return getDownloadURL(snapshot.ref);
+}

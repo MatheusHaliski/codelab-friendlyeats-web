@@ -33,12 +33,19 @@ const ImageCover = ({ photo, name }) => {
   );
 };
 
-const RestaurantRating = ({ restaurant }) => (
-  <div className="restaurant__rating">
-    <ul>{renderStars(restaurant.avgRating)}</ul>
-    <span>({restaurant.numRatings})</span>
-  </div>
-);
+const resolveReviewCount = (restaurant) =>
+  restaurant.review_count ?? restaurant.numRatings ?? restaurant.reviews?.length ?? 0;
+
+const RestaurantRating = ({ restaurant }) => {
+  const reviewCount = resolveReviewCount(restaurant);
+
+  return (
+    <div className="restaurant__rating">
+      <ul>{renderStars(restaurant.avgRating)}</ul>
+      <span>({reviewCount})</span>
+    </div>
+  );
+};
 
 const RestaurantMetadata = ({ restaurant }) => (
   <div className="restaurant__meta">
@@ -166,7 +173,8 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
       <ul className="restaurants">
         {restaurants
           .sort((a, b) => {
-            if (filters.sort === "review") return b.numRatings - a.numRatings;
+            if (filters.sort === "review")
+              return resolveReviewCount(b) - resolveReviewCount(a);
             return b.avgRating - a.avgRating;
           })
 

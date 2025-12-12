@@ -5,6 +5,14 @@ import { storage } from "@/src/lib/firebase/clientApp";
 import { updateRestaurantImageReference } from "@/src/lib/firebase/firestore";
 
 export async function updateRestaurantImage(restaurantId, image) {
+  if (!restaurantId) {
+    throw new Error("A restaurantId is required to update an image.");
+  }
+
+  if (!image) {
+    throw new Error("An image file is required to update the restaurant photo.");
+  }
+
   const downloadUrl = await uploadImage(restaurantId, image);
 
   await updateRestaurantImageReference(restaurantId, downloadUrl);

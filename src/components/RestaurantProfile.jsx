@@ -18,6 +18,7 @@ export default function RestaurantProfile({
   const [reviews, setReviews] = useState([]);
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(5);
+  const [isUploading, setIsUploading] = useState(false);
 
   // -------------------------
   // Load reviews in real-time
@@ -33,10 +34,23 @@ export default function RestaurantProfile({
   // -------------------------
   async function handleImageUpload(event) {
     const file = event.target.files?.[0];
-    if (!file) return;
 
-    const url = await updateRestaurantImage(restaurant.id, file);
-    onPhotoUpdated?.(url);
+    if (!file || isUploading) return;
+
+    try {
+      setIsUploading(true);
+      const url = await updateRestaurantImage(restaurant.id, file);
+      onPhotoUpdated?.(url);
+    } catch (error) {
+      console.error("Failed to update restaurant image", error);
+      alert("We couldn't update the photo. Please try again.");
+    } finally {
+      setIsUploading(false);
+      // Allow re-selecting the same file after an attempt
+      if (event.target) {
+        event.target.value = "";
+      }
+    }
   }
 
   // -------------------------
@@ -76,8 +90,11 @@ export default function RestaurantProfile({
               type="file"
               className="hidden"
               onChange={handleImageUpload}
+              accept="image/*"
             />
-            <span className="upload-btn">Update Photo</span>
+            <span className="upload-btn">
+              {isUploading ? "Updating..." : "Update Photo"}
+            </span>
           </label>
         )}
       </div>

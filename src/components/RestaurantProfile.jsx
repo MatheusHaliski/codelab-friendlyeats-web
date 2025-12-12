@@ -7,7 +7,6 @@ import {
   addReview,
   getReviewsSnapshotByRestaurantId,
 } from "@/src/lib/firebase/firestore.js";
-import { updateRestaurantImage } from "@/src/lib/firebase/storage.js";
 
 const FALLBACK_IMAGE =
   "https://codelab-friendlyeats-web--funcionarioslistaapp2025.us-central1.hosted.app/fallbackfood.png";
@@ -16,7 +15,6 @@ export default function RestaurantProfile({
   restaurant,
   user,
   userId,
-  onPhotoUpdated,
 }) {
   // -----------------------------------
   // STATE
@@ -25,7 +23,6 @@ export default function RestaurantProfile({
   const [reviews, setReviews] = useState([]);
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(5);
-  const [isUploading, setIsUploading] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
 
   // -----------------------------------
@@ -51,26 +48,6 @@ export default function RestaurantProfile({
   const visibleReviews = showAllReviews
     ? sortedReviews
     : sortedReviews.slice(0, 5);
-
-  // -----------------------------------
-  // IMAGE UPLOAD
-  // -----------------------------------
-  async function handleImageUpload(e) {
-    const file = e.target.files?.[0];
-    if (!file || isUploading) return;
-
-    try {
-      setIsUploading(true);
-      const url = await updateRestaurantImage(restaurant.id, file);
-      onPhotoUpdated?.(url);
-    } catch (err) {
-      console.error(err);
-      alert("We couldn't update the photo. Please try again.");
-    } finally {
-      setIsUploading(false);
-      e.target.value = "";
-    }
-  }
 
   // -----------------------------------
   // SUBMIT REVIEW
@@ -102,20 +79,6 @@ export default function RestaurantProfile({
     <section className="restaurant-header">
       <div className="restaurant-header__image">
         <img src={imageSrc} alt={restaurant.name} />
-
-        {userId && (
-          <label className="upload-label">
-            <input
-              type="file"
-              hidden
-              accept="image/*"
-              onChange={handleImageUpload}
-            />
-            <span className="upload-btn">
-              {isUploading ? "Updating..." : "Update Photo"}
-            </span>
-          </label>
-        )}
       </div>
 
       <div className="restaurant-header__content">

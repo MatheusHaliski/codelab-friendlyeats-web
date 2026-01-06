@@ -151,27 +151,21 @@ export default function RestaurantListings({ searchParams = {} }) {
   // Firestore: Lista filtrada
   // ------------------------------
   useEffect(() => {
-    if (!authReady || !currentUser) {
-      setRestaurants([]);
-      return undefined;
-    }
+    if (!authReady) return undefined;
     return getRestaurantsSnapshot((data) => {
       setRestaurants(data);
     }, filters);
-  }, [authReady, currentUser, filters]);
+  }, [authReady, filters]);
 
   // ------------------------------
   // Firestore: Todas categorias (para montar selects)
   // ------------------------------
   useEffect(() => {
-    if (!authReady || !currentUser) {
-      setAllRestaurants([]);
-      return undefined;
-    }
+    if (!authReady) return undefined;
     return getRestaurantsSnapshot((data) => setAllRestaurants(data), {
       type: filters.type,
     });
-  }, [authReady, currentUser, filters.type]);
+  }, [authReady, filters.type]);
 
   // ------------------------------
   // RENDER

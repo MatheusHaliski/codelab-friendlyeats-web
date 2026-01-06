@@ -1,19 +1,16 @@
 /**
  * Places (New) → searchNearby (Curitiba/Ahú) → salva no Firestore
- * e tenta obter uma imagem:
- *   1) usa a melhor foto do places.photos (gera URL /media)
- *   2) se falhar, faz fallback para Google Images (Custom Search) e salva
+ * Campos finais (exatos):
+ *   address, categories, city, country, fallbackApplied, fallbackType,
+ *   name, photo, review_count, stars, state, type
  *
  * Requisitos:
- *  - Node 18+ (ou node-fetch instalado, já está no seu projeto)
+ *  - Node 18+
  *  - .env com:
  *      GOOGLE_PLACES_API_KEY=...
  *      (opcional) GOOGLE_CSE_API_KEY=...
  *      (opcional) GOOGLE_CSE_SEARCH_ENGINE_ID=...
  *  - ServiceKey.json (Firebase Admin)
- *
- * Executar:
- *   node scripts/places/import_places_nearby.js
  */
 
 import fetch from "node-fetch";
@@ -48,7 +45,9 @@ const db = admin.firestore();
 // ========================================================
 // ✅ CONFIG PLACES (NEW) - searchNearby
 // ========================================================
-const PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_API_KEY;
+const PLACES_API_KEY =
+  process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_API_KEY;
+
 if (!PLACES_API_KEY) {
   console.error("❌ Defina GOOGLE_PLACES_API_KEY (ou GOOGLE_API_KEY) no .env");
   process.exit(1);
@@ -80,7 +79,7 @@ const NEARBY_BODY = {
 };
 
 // ========================================================
-// 🔎 Funções auxiliares para montar a query do Google Images
+// 🔎 Funções auxiliares para montar query do Google Images
 // ========================================================
 function sanitizeQuery(s) {
   if (!s) return "";
@@ -115,18 +114,18 @@ function buildQueryVariants(r) {
 // ========================================================
 // ⚡ Google Images (Custom Search JSON API) - fallback
 // ========================================================
-async function fetchRestaurantImages(restaurant, {
-  apiKey = process.env.GOOGLE_CSE_API_KEY,         // ✅ preferir .env
-  cx = process.env.GOOGLE_CSE_SEARCH_ENGINE_ID,    // ✅ preferir .env
-  num = 5,
-  safe = "off",
-  country = "br",
-  lang = "pt",
-} = {}) {
-  if (!apiKey || !cx) {
-    // sem CSE configurado, só não tenta
-    return null;
-  }
+async function fetchRestaurantImages(
+  restaurant,
+  {
+    apiKey = process.env.GOOGLE_CSE_API_KEY,
+    cx = process.env.GOOGLE_CSE_SEARCH_ENGINE_ID,
+    num = 5,
+    safe = "off",
+    country = "br",
+    lang = "pt",
+  } = {}
+) {
+  if (!apiKey || !cx) return null;
 
   const variants = buildQueryVariants(restaurant);
 
@@ -174,25 +173,20 @@ function pickBestPlacePhoto(place) {
       .toLowerCase();
 
     const isOfficial = author && placeName && author === placeName;
-
     const ratio = w && h ? w / h : 0;
-    const squarePenalty = ratio ? Math.abs(1 - ratio) : 1; // 0 = perfeito
+    const squarePenalty = ratio ? Math.abs(1 - ratio) : 1;
 
     let s = 0;
-    if (isOfficial) s += 1000; // pesa muito se autor = nome
-    s += Math.max(0, 200 - squarePenalty * 200); // +200 se quadrada
-    s += Math.min(300, area / 20000); // bônus por resolução (limitado)
+    if (isOfficial) s += 1000;
+    s += Math.max(0, 200 - squarePenalty * 200);
+    s += Math.min(300, area / 20000);
     return s;
   }
 
-  return photos
-    .map((p) => ({ p, s: score(p) }))
-    .sort((a, b) => b.s - a.s)[0].p;
+  return photos.map((p) => ({ p, s: score(p) })).sort((a, b) => b.s - a.s)[0].p;
 }
 
-function placePhotoToMediaUrl(photoName, { maxWidthPx = 800 } = {}) {
-  // photoName vem como: places/{placeId}/photos/{photoId}
-  // URL final: https://places.googleapis.com/v1/{photoName}/media?maxWidthPx=...&key=...
+function placePhotoToMediaUrl(photoName, { maxWidthPx = 900 } = {}) {
   return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${encodeURIComponent(
     maxWidthPx
   )}&key=${encodeURIComponent(PLACES_API_KEY)}`;
@@ -223,93 +217,128 @@ async function searchNearbyPlaces() {
 }
 
 // ========================================================
-// 🧠 SALVAR / ATUALIZAR NO FIRESTORE (restaurants)
+// 🧠 NORMALIZAÇÃO → exatamente os campos desejados
 // ========================================================
 function normalizePlace(place) {
-  const displayName = place?.displayName?.text || "";
-  const formattedAddress = place?.formattedAddress || "";
+  const name = place?.displayName?.text || "";
+  const address = place?.formattedAddress || "";
 
-  // tentar extrair cidade/estado/país do formattedAddress (heurística simples)
-  // ex: "Av. X, 123 - Bairro, Curitiba - PR, Brasil"
-  const cityGuess = "Curitiba";
-  const stateGuess = "PR";
-  const countryGuess = "Brasil";
+  // Mantive como fixo (igual ao seu script original)
+  const city = "Curitiba";
+  const state = "PR";
+  const country = "Brasil";
+
+  // Categories: aqui usamos "types" do Google como base (você pode trocar depois)
+  const categories = Array.isArray(place?.types) ? place.types : [];
+
+  // type do seu app (food/lifestyle). Para "restaurant" faz sentido ser food:
+  const type = "food";
+
+  const stars = typeof place?.rating === "number" ? place.rating : null;
+  const review_count =
+    typeof place?.userRatingCount === "number" ? place.userRatingCount : 0;
 
   return {
-    source: "google_places_new",
     placeId: place?.id || null,
-    name: displayName,
-    address: formattedAddress,
-    rating: typeof place?.rating === "number" ? place.rating : null,
-    userRatingCount:
-      typeof place?.userRatingCount === "number" ? place.userRatingCount : null,
-    website: place?.websiteUri || null,
-    types: Array.isArray(place?.types) ? place.types : [],
-    city: cityGuess,
-    state: stateGuess,
-    country: countryGuess,
-    // Guardar as fotos brutas para referência/debug:
-    photos: Array.isArray(place?.photos) ? place.photos : [],
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+
+    // ✅ campos exigidos
+    address,
+    categories,
+    city,
+    country,
+    name,
+    review_count,
+    stars,
+    state,
+    type,
   };
 }
 
+// ========================================================
+// 🧠 UPSERT NO FIRESTORE (docId = placeId)
+// ========================================================
 async function upsertRestaurantFromPlace(place) {
-  const normalized = normalizePlace(place);
+  const base = normalizePlace(place);
 
-  if (!normalized.placeId || !normalized.name) {
+  if (!base.placeId || !base.name) {
     return { skipped: true, reason: "missing placeId/name" };
   }
 
-  // id fixo pelo placeId para não duplicar
-  const ref = db.collection("restaurants").doc(normalized.placeId);
+  const ref = db.collection("restaurants").doc(base.placeId);
 
   const snap = await ref.get();
   const existing = snap.exists ? snap.data() : null;
 
-  // Se já existe e tem foto, não mexe (você pode mudar isso)
-  const hasPhoto = existing?.photo || existing?.image || existing?.photoUrl;
+  const alreadyHasPhoto =
+    !!(existing?.photo && String(existing.photo).trim().length > 0);
 
-  // 1) tenta foto do Places (melhor foto)
-  let photoUrl = null;
-  if (!hasPhoto) {
+  // Foto + fallback flags
+  let photo = alreadyHasPhoto ? existing.photo : null;
+  let fallbackApplied = false;
+  let fallbackType = "none"; // "places" | "google_images" | "none"
+
+  // 1) tenta foto do Places (se ainda não tem foto)
+  if (!photo) {
     const best = pickBestPlacePhoto(place);
     if (best?.name) {
-      photoUrl = placePhotoToMediaUrl(best.name, { maxWidthPx: 900 });
+      photo = placePhotoToMediaUrl(best.name, { maxWidthPx: 900 });
+      fallbackApplied = false;
+      fallbackType = "places";
     }
   }
 
-  // 2) fallback: Google Images (Custom Search)
-  if (!hasPhoto && !photoUrl) {
-    photoUrl = await fetchRestaurantImages({
-      name: normalized.name,
-      city: normalized.city,
-      country: normalized.country,
-      category: "restaurant",
-      categories: ["restaurant"],
-    }, {
-      safe: "off",
-      country: "br",
-      lang: "pt",
-      num: 5,
-    });
+  // 2) fallback Google Images (Custom Search)
+  if (!photo) {
+    const imageUrl = await fetchRestaurantImages(
+      {
+        name: base.name,
+        city: base.city,
+        country: base.country,
+        categories: base.categories,
+        category: "restaurant",
+      },
+      { safe: "off", country: "br", lang: "pt", num: 5 }
+    );
+
+    if (imageUrl) {
+      photo = imageUrl;
+      fallbackApplied = true;
+      fallbackType = "google_images";
+    }
   }
 
+  // Se não achou foto em lugar nenhum:
+  if (!photo) {
+    fallbackApplied = false;
+    fallbackType = "none";
+  }
+
+  // ✅ Payload FINAL com os campos exatos que você pediu
   const payload = {
-    ...normalized,
-    // mapeie para seus campos atuais:
-    avgRating: normalized.rating, // se seu app usa avgRating
-    numRatings: normalized.userRatingCount, // opcional (você disse que quer evitar, mas pode guardar)
+    address: base.address,
+    categories: base.categories,
+    city: base.city,
+    country: base.country,
+    fallbackApplied,
+    fallbackType,
+    name: base.name,
+    ...(photo ? { photo } : {}),
+    review_count: base.review_count,
+    stars: base.stars,
+    state: base.state,
+    type: base.type,
   };
 
-  if (!hasPhoto && photoUrl) {
-    payload.photo = photoUrl;
-  }
-
-  // merge true para não apagar campos que já existem
+  // Upsert (cria ou atualiza sem apagar outros campos existentes)
   await ref.set(payload, { merge: true });
 
-  return { skipped: false, placeId: normalized.placeId, name: normalized.name, savedPhoto: !!payload.photo };
+  return {
+    skipped: false,
+    placeId: base.placeId,
+    name: base.name,
+    photoSaved: !!photo && !alreadyHasPhoto,
+    fallbackType,
+  };
 }
 
 // ========================================================
@@ -318,10 +347,9 @@ async function upsertRestaurantFromPlace(place) {
 async function run() {
   console.log("🔎 Buscando restaurantes via Places (New) searchNearby...");
   const places = await searchNearbyPlaces();
-
   console.log(`✅ Encontrados ${places.length} lugares. Salvando no Firestore...`);
 
-  let saved = 0;
+  let upserted = 0;
   let withPhoto = 0;
 
   for (let i = 0; i < places.length; i++) {
@@ -331,10 +359,13 @@ async function run() {
 
     try {
       const result = await upsertRestaurantFromPlace(p);
+
       if (!result.skipped) {
-        saved++;
-        if (result.savedPhoto) withPhoto++;
-        console.log(`✅ Salvo: ${result.placeId} | foto: ${result.savedPhoto ? "sim" : "não"}`);
+        upserted++;
+        if (result.photoSaved) withPhoto++;
+        console.log(
+          `✅ Upsert: ${result.placeId} | fotoNova: ${result.photoSaved ? "sim" : "não"} | fallbackType: ${result.fallbackType}`
+        );
       } else {
         console.log(`⏭️ Pulado: ${result.reason}`);
       }
@@ -346,7 +377,7 @@ async function run() {
     await new Promise((r) => setTimeout(r, 300));
   }
 
-  console.log(`\n🎯 Concluído! Salvos/atualizados: ${saved}. Com foto: ${withPhoto}.`);
+  console.log(`\n🎯 Concluído! Upserts: ${upserted}. Fotos novas: ${withPhoto}.`);
   process.exit(0);
 }
 

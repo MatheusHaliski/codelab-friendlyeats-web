@@ -1,17 +1,3 @@
-/**
- * Places (New) → searchNearby (Curitiba/Ahú) → salva no Firestore
- * Campos finais (exatos):
- *   address, categories, city, country, fallbackApplied, fallbackType,
- *   name, photo, review_count, stars, state, type
- *
- * Requisitos:
- *  - Node 18+
- *  - .env com:
- *      GOOGLE_PLACES_API_KEY=...
- *      (opcional) GOOGLE_CSE_API_KEY=...
- *      (opcional) GOOGLE_CSE_SEARCH_ENGINE_ID=...
- *  - ServiceKey.json (Firebase Admin)
- */
 
 import fetch from "node-fetch";
 import admin from "firebase-admin";

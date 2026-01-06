@@ -10,6 +10,7 @@ import {
   reviewCountFe,
 } from "@/src/components/RestaurantProfile.jsx";
 import { getRestaurantsSnapshot } from "@/src/lib/firebase/firestore.js";
+import { onAuthStateChanged } from "@/src/lib/firebase/auth.js";
 import Filters from "@/src/components/Filters.jsx";
 import { CATEGORY_OPTIONS } from "@/src/lib/categoryOptions.js";
 
@@ -84,7 +85,7 @@ const RestaurantItem = ({ restaurant }) => (
 // COMPONENTE PRINCIPAL
 // ------------------------------
 
-export default function RestaurantListings({ initialRestaurants, searchParams }) {
+export default function RestaurantListings({ searchParams = {} }) {
   const router = useRouter();
 
   const initialFilters = {
@@ -97,9 +98,18 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
     sort: searchParams.sort || "rating",
   };
 
-  const [restaurants, setRestaurants] = useState(initialRestaurants);
-  const [allRestaurants, setAllRestaurants] = useState(initialRestaurants);
+  const [restaurants, setRestaurants] = useState([]);
+  const [allRestaurants, setAllRestaurants] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
+  const [authReady, setAuthReady] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    return onAuthStateChanged((user) => {
+      setCurrentUser(user ?? null);
+      setAuthReady(true);
+    });
+  }, []);
 
   // ------------------------------
   // AGRUPAMENTO POR PAÍS → ESTADO → CIDADE
@@ -141,21 +151,27 @@ export default function RestaurantListings({ initialRestaurants, searchParams })
   // Firestore: Lista filtrada
   // ------------------------------
   useEffect(() => {
+    if (!authReady || !currentUser) {
+      setRestaurants([]);
+      return undefined;
+    }
     return getRestaurantsSnapshot((data) => {
       setRestaurants(data);
     }, filters);
-  }, [filters]);
+  }, [authReady, currentUser, filters]);
 
   // ------------------------------
   // Firestore: Todas categorias (para montar selects)
   // ------------------------------
   useEffect(() => {
-    const unsub = getRestaurantsSnapshot(
-      (data) => setAllRestaurants(data),
-      { type: filters.type }
-    );
-    return unsub;
-  }, [filters.type]);
+    if (!authReady || !currentUser) {
+      setAllRestaurants([]);
+      return undefined;
+    }
+    return getRestaurantsSnapshot((data) => setAllRestaurants(data), {
+      type: filters.type,
+    });
+  }, [authReady, currentUser, filters.type]);
 
   // ------------------------------
   // RENDER

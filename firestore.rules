@@ -32,5 +32,14 @@ service cloud.firestore {
                         && request.resource.data.userId == request.auth.uid;
       }
     }
+
+    // Reviews (top-level collection used by the app)
+    //   - Anyone can read
+    //   - Authenticated user can create
+    //   - Updates and deletes are not allowed (default)
+    match /review/{reviewId} {
+      allow read;
+      allow create: if request.auth != null;
+    }
   }
 }

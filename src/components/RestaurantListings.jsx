@@ -85,7 +85,10 @@ const RestaurantItem = ({ restaurant }) => (
 // COMPONENTE PRINCIPAL
 // ------------------------------
 
-export default function RestaurantListings({ searchParams = {} }) {
+export default function RestaurantListings({
+  searchParams = {},
+  initialRestaurants = [],
+}) {
   const router = useRouter();
 
   const initialFilters = {
@@ -98,7 +101,7 @@ export default function RestaurantListings({ searchParams = {} }) {
     sort: searchParams.sort || "rating",
   };
 
-  const [restaurants, setRestaurants] = useState([]);
+  const [restaurants, setRestaurants] = useState(initialRestaurants);
   const [allRestaurants, setAllRestaurants] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
   const [authReady, setAuthReady] = useState(false);

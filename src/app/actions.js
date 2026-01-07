@@ -28,6 +28,10 @@ export async function handleReviewFormSubmission(data) {
   }
 
   const { firebaseServerApp } = await getAuthenticatedAppForUser();
+  if (!firebaseServerApp) {
+    console.error("Firebase Admin app is unavailable; review not saved.");
+    return;
+  }
   const firestore = getFirestore(firebaseServerApp);
 
   await addReviewToRestaurant(firestore, restaurantId, {

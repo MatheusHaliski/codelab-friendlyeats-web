@@ -1,17 +1,5 @@
-import RestaurantListings from "@/src/components/RestaurantListings.jsx";
-import { getRestaurantsAdmin } from "@/src/lib/firebase/adminFirestore.js";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function Home({ searchParams }) {
-  const restaurants = await getRestaurantsAdmin(searchParams ?? {});
-
-  return (
-    <main className="main__home">
-      <RestaurantListings
-        searchParams={searchParams}
-        initialRestaurants={restaurants}
-      />
-    </main>
-  );
+export default function Home() {
+  redirect("/restaurantcardspage");
 }

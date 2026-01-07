@@ -52,18 +52,10 @@ function normalizeRestaurantSnapshot(docSnapshot) {
 export async function getRestaurantById(restaurantId) {
   if (!restaurantId) return null;
 
-  try {
-    const firestore = getAdminFirestore();
-    const docSnapshot = await firestore
-      .collection("restaurants")
-      .doc(restaurantId)
-      .get();
+  const firestore = getAdminFirestore();
+  const docSnapshot = await firestore.collection("restaurants").doc(restaurantId).get();
 
-    if (!docSnapshot.exists) return null;
+  if (!docSnapshot.exists) return null;
 
-    return normalizeRestaurantSnapshot(docSnapshot);
-  } catch (error) {
-    console.error("Failed to load restaurant with admin SDK.", error);
-    return null;
-  }
+  return normalizeRestaurantSnapshot(docSnapshot);
 }

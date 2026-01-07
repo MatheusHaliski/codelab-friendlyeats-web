@@ -2,14 +2,23 @@ import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
-function getCredential() {
+function getServiceAccount() {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-  if (serviceAccountJson) {
-    return cert(JSON.parse(serviceAccountJson));
+  if (!serviceAccountJson) {
+    return null;
   }
 
-  return undefined;
+  return JSON.parse(serviceAccountJson);
+}
+
+function getProjectId(serviceAccount) {
+  return (
+    process.env.FIREBASE_PROJECT_ID ??
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ??
+    process.env.GCLOUD_PROJECT ??
+    serviceAccount?.project_id
+  );
 }
 
 export function getFirebaseAdminApp() {
@@ -17,10 +26,15 @@ export function getFirebaseAdminApp() {
     return getApps()[0];
   }
 
-  const credential = getCredential();
+  const serviceAccount = getServiceAccount();
+  const credential = serviceAccount ? cert(serviceAccount) : undefined;
+  const projectId = getProjectId(serviceAccount);
 
-  if (credential) {
-    return initializeApp({ credential });
+  if (credential || projectId) {
+    return initializeApp({
+      ...(credential ? { credential } : {}),
+      ...(projectId ? { projectId } : {}),
+    });
   }
 
   return initializeApp();

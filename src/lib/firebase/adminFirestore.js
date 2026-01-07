@@ -68,15 +68,20 @@ function getCollectionForType(database, type) {
 }
 
 export async function getRestaurantsAdmin(filters = {}) {
-  const firestore = getAdminFirestore();
-  const restaurantsRef = getCollectionForType(firestore, filters.type);
-  const restaurantsQuery = applyQueryFilters(restaurantsRef, {
-    ...filters,
-    type: filters.type ?? "food",
-  });
-  const results = await restaurantsQuery.get();
+  try {
+    const firestore = getAdminFirestore();
+    const restaurantsRef = getCollectionForType(firestore, filters.type);
+    const restaurantsQuery = applyQueryFilters(restaurantsRef, {
+      ...filters,
+      type: filters.type ?? "food",
+    });
+    const results = await restaurantsQuery.get();
 
-  return results.docs
-    .map(normalizeRestaurantSnapshot)
-    .filter((restaurant) => restaurantMatchesType(restaurant, filters.type));
+    return results.docs
+      .map(normalizeRestaurantSnapshot)
+      .filter((restaurant) => restaurantMatchesType(restaurant, filters.type));
+  } catch (error) {
+    console.error("Failed to load restaurants from admin Firestore.", error);
+    return [];
+  }
 }

@@ -143,7 +143,7 @@ export default function Filters({
               <select
                 value={filters.state}
                 onChange={handleState}
-                disabled={!filters.country}
+                disabled={stateOptions.length <= 1}
               >
                 {stateOptions.map((s, i) => (
                   <option key={i} value={s}>
@@ -161,7 +161,7 @@ export default function Filters({
               <select
                 value={filters.city}
                 onChange={(e) => handleSelection(e, "city")}
-                disabled={!filters.state}
+                disabled={cityOptions.length <= 1}
               >
                 {cityOptions.map((city, i) => (
                   <option key={i} value={city}>

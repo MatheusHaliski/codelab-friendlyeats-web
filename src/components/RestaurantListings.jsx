@@ -132,14 +132,26 @@ export default function RestaurantListings({
   }, {});
 
   const countryOptions = ["", ...Object.keys(locationOptions).sort()];
-  const stateOptions = [
-    "",
-    ...Object.keys(locationOptions[filters.country] || {}).sort(),
-  ];
-  const cityOptions = [
-    "",
-    ...Array.from(locationOptions[filters.country]?.[filters.state] || new Set()).sort(),
-  ];
+  const stateOptionsSet = new Set(
+    filters.country
+      ? Object.keys(locationOptions[filters.country] || {})
+      : Object.values(locationOptions).flatMap((states) => Object.keys(states))
+  );
+  const stateOptions = ["", ...Array.from(stateOptionsSet).sort()];
+  const cityOptionsSet = new Set(
+    filters.country && filters.state
+      ? Array.from(locationOptions[filters.country]?.[filters.state] || new Set())
+      : filters.country
+        ? Object.values(locationOptions[filters.country] || {}).flatMap((cities) =>
+          Array.from(cities)
+        )
+        : filters.state
+          ? Object.values(locationOptions).flatMap((states) =>
+            Array.from(states[filters.state] || new Set())
+          )
+          : []
+  );
+  const cityOptions = ["", ...Array.from(cityOptionsSet).sort()];
 
   // ------------------------------
   // Atualiza URL com filtros

@@ -8,6 +8,8 @@ import {
 } from "@/src/components/Reviews/ReviewSummary";
 import { notFound } from "next/navigation";
 
+export const runtime = "nodejs";
+
 export default async function Home(props) {
   // This is a server component, we can access URL
   // parameters via Next.js and download the data

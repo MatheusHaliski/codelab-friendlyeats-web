@@ -1,15 +1,11 @@
 import Restaurant from "@/src/components/Restaurant.jsx";
 import { Suspense } from "react";
 import { getRestaurantById } from "@/src/lib/firebase/firestore.js";
-import {
-  getAuthenticatedAppForUser,
-  getAuthenticatedAppForUser as getUser,
-} from "@/src/lib/firebase/serverApp.js";
+import { getAuthenticatedAppForUser } from "@/src/lib/firebase/serverApp.js";
 import {
   GeminiSummary,
   GeminiSummarySkeleton,
 } from "@/src/components/Reviews/ReviewSummary";
-import { getFirestore } from "firebase/firestore";
 import { notFound } from "next/navigation";
 
 export default async function Home(props) {
@@ -17,12 +13,8 @@ export default async function Home(props) {
   // parameters via Next.js and download the data
   // we need for this page
   const params = await props.params;
-  const { currentUser } = await getUser();
-  const { firebaseServerApp } = await getAuthenticatedAppForUser();
-  const restaurant = await getRestaurantById(
-    getFirestore(firebaseServerApp),
-    params.id
-  );
+  const { currentUser } = await getAuthenticatedAppForUser();
+  const restaurant = await getRestaurantById(params.id);
 
   if (!restaurant) {
     notFound();

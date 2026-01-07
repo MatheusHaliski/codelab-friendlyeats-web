@@ -118,9 +118,11 @@ export default function RestaurantListings({
   // AGRUPAMENTO POR PAÍS → ESTADO → CIDADE
   // ------------------------------
   const locationOptions = allRestaurants.reduce((acc, restaurant) => {
-    const country = restaurant.country || "";
-    const state = restaurant.state || "";
-    const city = restaurant.city || "";
+    const country = (restaurant.country ?? "").trim();
+    const state = (restaurant.state ?? "").trim();
+    const city = (restaurant.city ?? "").trim();
+
+    if (!country) return acc;
 
     if (!acc[country]) acc[country] = {};
     if (!acc[country][state]) acc[country][state] = new Set();

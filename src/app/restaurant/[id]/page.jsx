@@ -1,6 +1,6 @@
 import Restaurant from "@/src/components/Restaurant.jsx";
 import { Suspense } from "react";
-import { getRestaurantById } from "@/src/lib/firebase/firestore.js";
+import { getRestaurantById } from "@/src/lib/firebase/adminFirestore.js";
 import { getAuthenticatedAppForUser } from "@/src/lib/firebase/serverApp.js";
 import {
   GeminiSummary,

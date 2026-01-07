@@ -1,8 +1,7 @@
+import "server-only";
 import { getAdminFirestore } from "@/src/lib/firebase/adminApp";
-import {
-  inferTypeFromCategories,
-  restaurantMatchesType,
-} from "@/src/lib/firebase/categoryKeywords";
+import { getRestaurantById as getClientRestaurantById } from "@/src/lib/firebase/firestore";
+import { inferTypeFromCategories } from "@/src/lib/firebase/categoryKeywords";
 
 function normalizeRestaurantSnapshot(docSnapshot) {
   const data = docSnapshot.data() ?? {};
@@ -20,12 +19,13 @@ function normalizeRestaurantSnapshot(docSnapshot) {
   const averageRating = data.stars ?? data.avgRating ?? 0;
   const price = Number.isFinite(data.price) ? data.price : 0;
   const city = data.city ?? "";
-  const address = data.address ?? data.address;
+  const address = data.address ?? "";
   const state = data.state ?? "";
   const country = data.country ?? "";
   const inferredType = inferTypeFromCategories(categories);
   const type =
-    data.type ?? inferredType ??
+    data.type ??
+    inferredType ??
     (docSnapshot.ref.parent.id === "lifestyle" ? "lifestyle" : "food");
 
   return {
@@ -50,38 +50,21 @@ function normalizeRestaurantSnapshot(docSnapshot) {
   };
 }
 
-function applyQueryFilters(baseRef, { category, city, country, state, sort }) {
-  let queryRef = baseRef;
+export async function getRestaurantById(restaurantId) {
+  if (!restaurantId) return null;
 
-  if (category) queryRef = queryRef.where("categories", "array-contains", category);
-  if (city) queryRef = queryRef.where("city", "==", city);
-  if (country) queryRef = queryRef.where("country", "==", country);
-  if (state) queryRef = queryRef.where("state", "==", state);
-
-  const sortField = sort === "review" ? "review_count" : "stars";
-  return queryRef.orderBy(sortField, "desc");
-}
-
-function getCollectionForType(database, type) {
-  const collectionName = type === "lifestyle" ? "lifestyle" : "restaurants";
-  return database.collection(collectionName);
-}
-
-export async function getRestaurantsAdmin(filters = {}) {
   try {
     const firestore = getAdminFirestore();
-    const restaurantsRef = getCollectionForType(firestore, filters.type);
-    const restaurantsQuery = applyQueryFilters(restaurantsRef, {
-      ...filters,
-      type: filters.type ?? "food",
-    });
-    const results = await restaurantsQuery.get();
+    const docSnapshot = await firestore
+      .collection("restaurants")
+      .doc(restaurantId)
+      .get();
 
-    return results.docs
-      .map(normalizeRestaurantSnapshot)
-      .filter((restaurant) => restaurantMatchesType(restaurant, filters.type));
+    if (!docSnapshot.exists) return null;
+
+    return normalizeRestaurantSnapshot(docSnapshot);
   } catch (error) {
-    console.error("Failed to load restaurants from admin Firestore.", error);
-    return [];
+    console.error("Failed to load restaurant with admin SDK.", error);
+    return getClientRestaurantById(restaurantId);
   }
 }

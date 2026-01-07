@@ -129,7 +129,7 @@ export default function Filters({
               <select value={filters.country} onChange={handleCountry}>
                 {countryOptions.map((c, i) => (
                   <option key={i} value={c}>
-                    {c}
+                    {c === "" ? "All Countries" : c}
                   </option>
                 ))}
               </select>
@@ -147,7 +147,7 @@ export default function Filters({
               >
                 {stateOptions.map((s, i) => (
                   <option key={i} value={s}>
-                    {s}
+                    {s === "" ? "All States" : s}
                   </option>
                 ))}
               </select>
@@ -165,7 +165,7 @@ export default function Filters({
               >
                 {cityOptions.map((city, i) => (
                   <option key={i} value={city}>
-                    {city}
+                    {city === "" ? "All Cities" : city}
                   </option>
                 ))}
               </select>

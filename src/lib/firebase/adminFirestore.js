@@ -1,6 +1,5 @@
 import "server-only";
 import { getAdminFirestore } from "@/src/lib/firebase/adminApp";
-import { getRestaurantById as getClientRestaurantById } from "@/src/lib/firebase/firestore";
 import { inferTypeFromCategories } from "@/src/lib/firebase/categoryKeywords";
 
 function normalizeRestaurantSnapshot(docSnapshot) {
@@ -53,18 +52,10 @@ function normalizeRestaurantSnapshot(docSnapshot) {
 export async function getRestaurantById(restaurantId) {
   if (!restaurantId) return null;
 
-  try {
-    const firestore = getAdminFirestore();
-    const docSnapshot = await firestore
-      .collection("restaurants")
-      .doc(restaurantId)
-      .get();
+  const firestore = getAdminFirestore();
+  const docSnapshot = await firestore.collection("restaurants").doc(restaurantId).get();
 
-    if (!docSnapshot.exists) return null;
+  if (!docSnapshot.exists) return null;
 
-    return normalizeRestaurantSnapshot(docSnapshot);
-  } catch (error) {
-    console.error("Failed to load restaurant with admin SDK.", error);
-    return getClientRestaurantById(restaurantId);
-  }
+  return normalizeRestaurantSnapshot(docSnapshot);
 }

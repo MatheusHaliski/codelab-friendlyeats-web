@@ -1,12 +1,14 @@
 import Restaurant from "@/src/components/Restaurant.jsx";
 import { Suspense } from "react";
-import { getRestaurantById } from "@/src/lib/firebase/firestore.js";
+import { getRestaurantById } from "@/src/lib/firebase/adminFirestore.js";
 import { getAuthenticatedAppForUser } from "@/src/lib/firebase/serverApp.js";
 import {
   GeminiSummary,
   GeminiSummarySkeleton,
 } from "@/src/components/Reviews/ReviewSummary";
 import { notFound } from "next/navigation";
+
+export const runtime = "nodejs";
 
 export default async function Home(props) {
   // This is a server component, we can access URL

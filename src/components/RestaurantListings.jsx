@@ -102,7 +102,6 @@ export default function RestaurantListings({
   };
 
   const [restaurants, setRestaurants] = useState(initialRestaurants);
-  const [allRestaurants, setAllRestaurants] = useState([]);
   const [filters, setFilters] = useState(initialFilters);
   const [authReady, setAuthReady] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -114,10 +113,48 @@ export default function RestaurantListings({
     });
   }, []);
 
+  const filteredRestaurants = restaurants
+    .filter((r) => {
+      const normalizeCategory = (value) =>
+        typeof value === "string"
+          ? value.toLowerCase()
+          : (value ?? "").toString().toLowerCase();
+
+      const matchCity = !filters.city || r.city === filters.city;
+      const matchCategory =
+        !filters.category ||
+        (() => {
+          const selectedCategory = normalizeCategory(filters.category);
+          const restaurantCategories = Array.isArray(r.categories)
+            ? r.categories
+            : [r.category];
+
+          return restaurantCategories.some(
+            (category) => normalizeCategory(category) === selectedCategory
+          );
+        })();
+
+      const matchCountry = !filters.country || r.country === filters.country;
+      const matchState = !filters.state || r.state === filters.state;
+      const matchName =
+        !filters.name ||
+        r.name?.toLowerCase().includes(filters.name.toLowerCase());
+
+      return matchCity && matchCategory && matchCountry && matchName && matchState;
+    })
+    .sort((a, b) => {
+      if (filters.sort === "review")
+        return (
+          getReviewCount(b.reviews ?? [], b) -
+          getReviewCount(a.reviews ?? [], a)
+        );
+      return b.avgRating - a.avgRating;
+    });
+
   // ------------------------------
   // AGRUPAMENTO POR PAÍS → ESTADO → CIDADE
   // ------------------------------
-  const locationOptions = allRestaurants.reduce((acc, restaurant) => {
+  const locationOptions = filteredRestaurants.reduce((acc, restaurant) => {
     const country = (restaurant.country ?? "").trim();
     const state = (restaurant.state ?? "").trim();
     const city = (restaurant.city ?? "").trim();
@@ -175,16 +212,6 @@ export default function RestaurantListings({
   }, [authReady, filters]);
 
   // ------------------------------
-  // Firestore: Todas categorias (para montar selects)
-  // ------------------------------
-  useEffect(() => {
-    if (!authReady) return undefined;
-    return getRestaurantsSnapshot((data) => setAllRestaurants(data), {
-      type: filters.type,
-    });
-  }, [authReady, filters.type]);
-
-  // ------------------------------
   // RENDER
   // ------------------------------
 
@@ -200,48 +227,9 @@ export default function RestaurantListings({
       />
 
       <ul className="restaurants">
-        {restaurants
-          .sort((a, b) => {
-            if (filters.sort === "review")
-              return (
-                getReviewCount(b.reviews ?? [], b) -
-                getReviewCount(a.reviews ?? [], a)
-              );
-            return b.avgRating - a.avgRating;
-          })
-
-          .filter((r) => {
-            const normalizeCategory = (value) =>
-              typeof value === "string"
-                ? value.toLowerCase()
-                : (value ?? "").toString().toLowerCase();
-
-            const matchCity = !filters.city || r.city === filters.city;
-            const matchCategory =
-              !filters.category ||
-              (() => {
-                const selectedCategory = normalizeCategory(filters.category);
-                const restaurantCategories = Array.isArray(r.categories)
-                  ? r.categories
-                  : [r.category];
-
-                return restaurantCategories.some(
-                  (category) => normalizeCategory(category) === selectedCategory
-                );
-              })();
-
-            const matchCountry = !filters.country || r.country === filters.country;
-            const matchState = !filters.state || r.state === filters.state;
-            const matchName =
-              !filters.name ||
-              r.name?.toLowerCase().includes(filters.name.toLowerCase());
-
-            return matchCity && matchCategory && matchCountry && matchName && matchState;
-          })
-
-          .map((restaurant) => (
-            <RestaurantItem key={restaurant.id} restaurant={restaurant} />
-          ))}
+        {filteredRestaurants.map((restaurant) => (
+          <RestaurantItem key={restaurant.id} restaurant={restaurant} />
+        ))}
       </ul>
     </article>
   );
